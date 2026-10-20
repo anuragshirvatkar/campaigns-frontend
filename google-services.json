@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "13841307072",
+    "project_id": "campaigns-62d37",
+    "storage_bucket": "campaigns-62d37.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13841307072:android:55708e6d35ca1e147e6425",
+        "android_client_info": {
+          "package_name": "com.anuragshirvatkar.campaigns"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "13841307072-li2intotfrh1k8jtchmje0esnger4iel.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anuragshirvatkar.campaigns",
+            "certificate_hash": "2cd753f808a523bd890134dc42aabacb59d42976"
+          }
+        },
+        {
+          "client_id": "13841307072-9v9qr1c0bonfm8lqt5a4g4eiuu5ku41h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVO5fB1VQAzGNxXzp6LTZ9H5YFIiMNRDQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "13841307072-9v9qr1c0bonfm8lqt5a4g4eiuu5ku41h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
