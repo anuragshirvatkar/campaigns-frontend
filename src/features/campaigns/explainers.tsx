@@ -75,7 +75,7 @@ export function ReviewProcess() {
       <Bullet>Every campaign is reviewed before it can be funded: the story, the sources behind its claims, the ad visuals and the targeting.</Bullet>
       <Bullet>{`Approval means the campaign meets the platform's content and advertising rules. It is not an independent fact-check or endorsement.`}</Bullet>
       <Bullet>{`If a live campaign's content changes, it goes back through review before its ads are updated.`}</Bullet>
-      <Bullet>In this prototype, review is simulated and completes automatically after a short delay.</Bullet>
+      <Bullet>A person on the Campaigns team makes every decision. An automated check flags possible problems for them first.</Bullet>
     </View>
   );
 }

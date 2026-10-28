@@ -2,7 +2,7 @@
 // (851px wide, status bar ~80px) and scaled to the screen width.
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MyCampaignCard } from "@/api/types";
@@ -10,6 +10,7 @@ import { Text } from "@/components/ui";
 import { CampaignThumb } from "@/features/campaigns/campaign-parts";
 import { HomeHeader, useHomeScale } from "@/features/home/home-top";
 import { timeAgo } from "@/lib/format";
+import { previewUrl } from "@/lib/image-preview";
 import type { IconName } from "@/lib/labels";
 import { colors, fonts, spacing, themed, dk } from "@/theme";
 import { PressScale } from "@/components/ui/motion";
@@ -105,7 +106,7 @@ export function CreateHero({
         u={u}
         style={{ left: u(444), top: cardTop, width: u(373), height: u(503) }}
         icon="mic-outline"
-        title={"Create with\nyour voice"}
+        title="Create with voice"
         body="Describe your idea out loud. AI turns it into an editable draft."
         art={
           <Image
@@ -278,7 +279,12 @@ export function DraftTile({
   deleting: boolean;
 }) {
   const u = useCreateScale();
-  const image = d.squareImageUrl ?? d.coverImageUrl;
+  const original = d.squareImageUrl ?? d.coverImageUrl;
+  const image = original ? previewUrl(original) : original;
+  // Opening the draft shows the cover: have it on the phone already
+  useEffect(() => {
+    if (d.coverImageUrl) void Image.prefetch(previewUrl(d.coverImageUrl)).catch(() => {});
+  }, [d.coverImageUrl]);
   return (
     <PressScale scaleTo={0.98}
       accessibilityRole="button"

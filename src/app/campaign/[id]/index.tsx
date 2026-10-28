@@ -3,37 +3,19 @@ import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import Animated, {
-  interpolate,
-  useAnimatedRef,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
+import Animated, { interpolate, useAnimatedRef, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { showAlert } from "@/components/ui/alert-dialog";
 import { useCampaign, useFollowToggle, useUpdates } from "@/api/queries";
 import type { PublicCampaign } from "@/api/types";
-import {
-  Avatar,
-  Button,
-  CampaignPageSkeleton,
-  Card,
-  EmptyState,
-  ErrorState,
-  IconButton,
-  Pill,
-  ProgressBar,
-  StatusPill,
-  Text,
-} from "@/components/ui";
+import { Button, CampaignPageSkeleton, Card, EmptyState, ErrorState, IconButton, ProgressBar, StatusPill, Text } from "@/components/ui";
 import { useRequireAuth } from "@/features/auth/use-require-auth";
 import { AccordionRow, campaignStyles, Group, LinkRow, SectionLabel } from "@/features/campaigns/campaign-parts";
 import { AudienceAndDistribution, ReviewProcess, UseOfFunds } from "@/features/campaigns/explainers";
 import { FeedbackCard } from "@/features/campaigns/feedback-card";
 import { SourceList, StoryBlocks } from "@/features/campaigns/story";
-import { date, money, percent, reachRange, timeAgo, timeLeft, timeLeftShort } from "@/lib/format";
-import { CATEGORY, CHANNEL, CREATOR_TYPE, STATUS } from "@/lib/labels";
+import { money, percent, reachRange, timeAgo, timeLeftShort } from "@/lib/format";
+import { CATEGORY, CHANNEL, STATUS } from "@/lib/labels";
 import { shareCampaign } from "@/lib/share";
 import { colors, fonts, radius, shadow, spacing, themed, dk } from "@/theme";
 
@@ -145,12 +127,7 @@ function CampaignView({ c }: { c: PublicCampaign }) {
                 <FollowButton following={c.viewer.isFollowing} onPress={() => follow.mutate(!c.viewer!.isFollowing)} />
               )}
               {!c.viewer && <FollowButton following={false} onPress={() => requireAuth(() => {})} />}
-              <IconButton
-                icon="share-social-outline"
-                label="Share campaign"
-                variant="floating"
-                onPress={() => shareCampaign(c)}
-              />
+              <IconButton icon="share-social-outline" label="Share campaign" variant="floating" onPress={() => shareCampaign(c)} />
             </View>
           </View>
         </View>
@@ -167,54 +144,45 @@ function CampaignView({ c }: { c: PublicCampaign }) {
               </View>
             )}
             <StatusPill status={c.status} />
-            {c.isDemo && <Pill label="Demo data" tone="neutral" />}
           </View>
           <Text variant="h1" accessibilityRole="header" style={{ marginTop: spacing.md }}>
             {c.title}
           </Text>
-          <View style={styles.creator}>
-            <Avatar name={c.creatorName ?? "?"} size={36} />
-            <View style={{ flex: 1 }}>
-              <Text variant="title">{c.creatorName}</Text>
-              <Text variant="caption">
-                {c.creatorType ? CREATOR_TYPE[c.creatorType] : "Creator"} ·{" "}
-                {c.publishedAt ? `Published ${date(c.publishedAt)}` : `Submitted ${date(c.submittedAt)}`}
-              </Text>
-            </View>
-          </View>
 
           {/* Funding */}
-          <Card style={styles.funding}>
-            <View style={styles.fundingTop}>
-              <View style={{ flex: 1 }}>
-                <Text variant="number">{money(c.funding.raisedCents)}</Text>
-                <Text variant="caption">raised of {money(c.funding.goalCents)}</Text>
+          <View>
+            <Card style={styles.funding}>
+              <View style={styles.fundingTop}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="number">{money(c.funding.raisedCents)}</Text>
+                  <Text variant="caption">raised of {money(c.funding.goalCents)}</Text>
+                </View>
+                <Text variant="h2" color={colors.primary}>
+                  {percent(c.funding.percentFunded)}
+                </Text>
               </View>
-              <Text variant="h2" color={colors.primary}>
-                {percent(c.funding.percentFunded)}
-              </Text>
-            </View>
-            <ProgressBar value={c.funding.percentFunded} height={8} label="Funding progress" />
-            <View style={styles.facts}>
-              <Fact value={String(c.funding.backerCount)} label="backers" />
-              <View style={styles.factDivider} />
-              <Fact
-                value={funding ? (timeLeftShort(c.funding.deadline) ?? "—") : STATUS[c.status].label}
-                label={funding ? "left" : "status"}
-              />
-              <View style={styles.factDivider} />
-              <Fact
-                value={reachRange(c.funding.estimatedReachAtGoal)}
-                label="reach at goal"
-                info={() =>
-                  showAlert(
-                    "Estimated reach",
-                    `About ${Math.round(c.funding.reachPerDollar)} people per $1, from the prototype's demo assumptions. It's an estimate, not a guarantee.`,
-                  )
-                }
-              />
-            </View>
-          </Card>
+              <ProgressBar value={c.funding.percentFunded} height={8} label="Funding progress" />
+              <View style={styles.facts}>
+                <Fact value={String(c.funding.backerCount)} label="backers" />
+                <View style={styles.factDivider} />
+                <Fact
+                  value={funding ? (timeLeftShort(c.funding.deadline) ?? "—") : STATUS[c.status].label}
+                  label={funding ? "left" : "status"}
+                />
+                <View style={styles.factDivider} />
+                <Fact
+                  value={reachRange(c.funding.estimatedReachAtGoal)}
+                  label="reach at goal"
+                  info={() =>
+                    showAlert(
+                      "Estimated reach",
+                      `About ${Math.round(c.funding.reachPerDollar)} people per $1, from the prototype's demo assumptions. It's an estimate, not a guarantee.`,
+                    )
+                  }
+                />
+              </View>
+            </Card>
+          </View>
           <Pressable accessibilityRole="button" onPress={showFunds} hitSlop={8} style={styles.fundsLink}>
             <Ionicons name="wallet-outline" size={16} color={colors.primary} />
             <Text variant="title" color={colors.primary} style={{ fontSize: 14 }}>
@@ -237,13 +205,17 @@ function CampaignView({ c }: { c: PublicCampaign }) {
         <View style={styles.tabBody}>
           {tab === "Story" && (
             <>
-              {c.story.headline && <Text variant="h2">{c.story.headline}</Text>}
+              {c.story.headline && (
+                <Text variant="h2" style={{ fontFamily: fonts.bold }}>
+                  {c.story.headline}
+                </Text>
+              )}
               {c.story.intro && (
                 <Text variant="article" color={colors.textMuted} style={{ marginTop: spacing.sm, marginBottom: spacing.xl }}>
                   {c.story.intro}
                 </Text>
               )}
-              <StoryBlocks blocks={c.story.blocks} sources={c.sources} />
+              <StoryBlocks blocks={c.story.blocks} sources={c.sources} statIcon={cat?.icon} />
               {c.whyItMatters && (
                 <View style={styles.why}>
                   <Text variant="overline" color={colors.textMuted}>
@@ -272,8 +244,7 @@ function CampaignView({ c }: { c: PublicCampaign }) {
                   </AccordionRow>
                   <AccordionRow icon="git-network-outline" title="Distribution partners">
                     <Text variant="bodySm" color={colors.text}>
-                      Ads run on {channels} placements, bought and managed by the platform. In this prototype, delivery is
-                      simulated.
+                      Ads run on {channels} placements, bought and managed by the platform. In this prototype, delivery is simulated.
                     </Text>
                   </AccordionRow>
                 </Group>
@@ -351,20 +322,13 @@ function CampaignView({ c }: { c: PublicCampaign }) {
             onPress={() => router.push({ pathname: "/manage/[id]", params: { id: c.id } })}
           />
         ) : funding ? (
-          <>
-            <View style={{ flex: 1 }}>
-              <Text variant="title">
-                {percent(c.funding.percentFunded)} <Text variant="caption">funded</Text>
-              </Text>
-              <Text variant="caption">{timeLeft(c.funding.deadline)}</Text>
-            </View>
-            <Button
-              label={c.viewer?.hasBacked ? "Back again" : "Back this campaign"}
-              icon="megaphone-outline"
-              pulse
-              onPress={() => router.push({ pathname: "/campaign/[id]/back", params: { id: c.slug ?? c.id } })}
-            />
-          </>
+          <Button
+            label={c.viewer?.hasBacked ? "Back again" : "Back this campaign"}
+            icon="megaphone-outline"
+            pulse
+            style={{ flex: 1 }}
+            onPress={() => router.push({ pathname: "/campaign/[id]/back", params: { id: c.slug ?? c.id } })}
+          />
         ) : hasReport ? (
           <Button
             label={c.status === "completed" ? "View final report" : "View live delivery"}
@@ -398,7 +362,12 @@ function TabBar({ tab, onPick }: { tab: Tab; onPick: (t: Tab) => void }) {
           onPress={() => onPick(t)}
           style={[styles.segmentItem, tab === t && styles.segmentActive]}
         >
-          <Text variant="title" color={tab === t ? colors.primary : colors.textMuted} style={{ fontSize: 14 }} numberOfLines={1}>
+          <Text
+            variant="title"
+            color={tab === t ? colors.primary : colors.textMuted}
+            style={{ fontSize: 14, fontFamily: tab === t ? fonts.semibold : fonts.medium }}
+            numberOfLines={1}
+          >
             {t}
           </Text>
         </Pressable>
@@ -423,97 +392,108 @@ function Fact({ value, label, info }: { value: string; label: string; info?: () 
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  cover: { width: "100%", height: COVER_H, backgroundColor: colors.primarySoft },
-  shade: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.background },
-  topBar: { position: "absolute", left: spacing.lg, right: spacing.lg, flexDirection: "row", justifyContent: "space-between" },
-  sheet: {
-    marginTop: -24,
-    borderTopLeftRadius: radius.xl + 6,
-    borderTopRightRadius: radius.xl + 6,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-  },
-  metaRow: { flexDirection: "row", gap: spacing.sm, alignItems: "center", flexWrap: "wrap" },
-  catBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  creator: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.lg },
-  funding: { gap: spacing.md, marginTop: spacing.xl },
-  fundingTop: { flexDirection: "row", alignItems: "flex-end" },
-  fundsLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    marginTop: spacing.md,
-    minHeight: 32,
-  },
-  facts: { flexDirection: "row", alignItems: "center", paddingTop: spacing.xs },
-  fact: { flex: 1, alignItems: "center", gap: 2 },
-  factDivider: { width: StyleSheet.hairlineWidth * 2, height: 28, backgroundColor: colors.border },
-  // Transparent so the funding card's bottom shadow above stays visible
-  tabsWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.sm },
-  tabBody: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
-  pinned: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  segment: { flexDirection: "row", backgroundColor: colors.surface, borderRadius: radius.md, padding: 4 },
-  segmentItem: {
-    flex: 1,
-    minHeight: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.sm,
-    paddingHorizontal: 2,
-  },
-  segmentActive: {
-    backgroundColor: colors.card,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  why: {
-    marginTop: spacing.xl,
-    paddingLeft: spacing.lg,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primaryMuted,
-    gap: spacing.xs,
-  },
-  update: { padding: spacing.lg, gap: spacing.xs },
-  updateHead: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  actionBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    ...shadow.card,
-  },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    cover: { width: "100%", height: COVER_H, backgroundColor: colors.primarySoft },
+    shade: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.background },
+    topBar: { position: "absolute", left: spacing.lg, right: spacing.lg, flexDirection: "row", justifyContent: "space-between" },
+    sheet: {
+      marginTop: -24,
+      borderTopLeftRadius: radius.xl + 6,
+      borderTopRightRadius: radius.xl + 6,
+      backgroundColor: colors.background,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+    },
+    metaRow: { flexDirection: "row", gap: spacing.sm, alignItems: "center", flexWrap: "wrap" },
+    catBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radius.pill,
+    },
+    creator: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.lg },
+    funding: { gap: spacing.md, marginTop: spacing.xl },
+    fundingTop: { flexDirection: "row", alignItems: "flex-end" },
+    fundsLink: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      alignSelf: "flex-start",
+      marginTop: spacing.md,
+      minHeight: 32,
+    },
+    facts: { flexDirection: "row", alignItems: "center", paddingTop: spacing.xs },
+    fact: { flex: 1, alignItems: "center", gap: 2 },
+    factDivider: { width: StyleSheet.hairlineWidth * 2, height: 28, backgroundColor: colors.border },
+    // Transparent so the funding card's bottom shadow above stays visible
+    tabsWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.sm },
+    tabBody: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
+    pinned: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.background,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    segment: {
+      flexDirection: "row",
+      backgroundColor: colors.primaryTint,
+      borderRadius: radius.lg,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colors.primarySoft,
+    },
+    segmentItem: {
+      flex: 1,
+      minHeight: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.md,
+      paddingHorizontal: 2,
+    },
+    segmentActive: {
+      backgroundColor: colors.card,
+      shadowColor: "#4B44A8",
+      shadowOpacity: 0.12,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 1,
+    },
+    why: {
+      marginTop: spacing.xl,
+      paddingLeft: spacing.lg,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primaryMuted,
+      gap: spacing.xs,
+    },
+    update: { padding: spacing.lg, gap: spacing.xs },
+    updateHead: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+    actionBar: {
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      ...shadow.card,
+    },
+  }),
+);
 
 /** Floating Follow / Following pill on the cover image. Following = notified of milestones, updates and the report. */
 function FollowButton({ following, onPress }: { following: boolean; onPress: () => void }) {
@@ -534,19 +514,21 @@ function FollowButton({ following, onPress }: { following: boolean; onPress: () 
   );
 }
 
-const followStyles = themed(() => StyleSheet.create({
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    height: 44,
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    backgroundColor: dk("rgba(255,255,255,0.94)", "rgba(26,27,48,0.94)"), // same as the floating Back / Share buttons
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-}));
+const followStyles = themed(() =>
+  StyleSheet.create({
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      height: 44,
+      paddingHorizontal: 16,
+      borderRadius: 22,
+      backgroundColor: dk("rgba(255,255,255,0.94)", "rgba(26,27,48,0.94)"), // same as the floating Back / Share buttons
+      shadowColor: "#000",
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+    },
+  }),
+);

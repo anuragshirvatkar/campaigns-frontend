@@ -1,7 +1,7 @@
 // Secondary destinations from the brief (Partners, About, How It Works, FAQs, Help, Contact, Terms,
 // Privacy, Community Guidelines). Wording matches the platform's actual rules in the backend config:
 // 20% fee inside the amount, ~2.9% processing on top, keep-what-you-raise, no refunds once paid,
-// budget spent in full, simulated review, payments and delivery.
+// budget spent in full, review decided by the admin, simulated payments and delivery.
 
 export const SUPPORT_EMAIL = "anuragshirvatkar1@gmail.com";
 
@@ -81,7 +81,7 @@ export const PAGES: InfoPage[] = [
       },
       {
         heading: "Is my name shown?",
-        body: 'Not by default. Backers are private unless they choose to be listed at checkout, and then only a short form like "Priya S." is shown. Payment records stay accurate either way.',
+        body: 'Not by default. Backers are private unless they choose to be listed at checkout, and then only a short form like "Emily C." is shown. Payment records stay accurate either way.',
       },
       {
         heading: "Do I need an account?",
@@ -89,7 +89,7 @@ export const PAGES: InfoPage[] = [
       },
       {
         heading: "How does review work, and how long does it take?",
-        body: "The platform checks the story, sources, visuals, ad and targeting. Approval means the campaign meets the content and advertising rules; it is not an independent fact-check or endorsement, and no trust score is calculated. In this prototype, review is simulated and completes about 20 seconds after submitting.",
+        body: "The platform checks the story, sources, visuals, ad and targeting. Approval means the campaign meets the content and advertising rules; it is not an independent fact-check or endorsement, and no trust score is calculated. The Campaigns team makes every decision, helped by an automated check that flags possible problems. You're notified as soon as it's decided; if changes are needed, you'll see exactly what to fix and where.",
       },
       {
         heading: "How long do campaigns run?",
@@ -128,7 +128,7 @@ export const PAGES: InfoPage[] = [
       },
       {
         heading: "This prototype",
-        body: "This app is a hackathon prototype. Review, payments and ad delivery are simulated so the full journey can be shown end to end, and figures marked as demo data are illustrative.",
+        body: "This app is a hackathon prototype. Payments and ad delivery are simulated so the full journey can be shown end to end, and figures marked as demo data are illustrative.",
       },
     ],
   },
@@ -162,7 +162,7 @@ export const PAGES: InfoPage[] = [
       },
       {
         heading: "My campaign is in review",
-        body: "In this demo, review completes automatically about 20 seconds after you submit. You'll get a notification when it goes live.",
+        body: "The Campaigns team reviews it and you'll get a notification with the decision. If they ask for changes, open the campaign to see what to fix, then resubmit.",
       },
       {
         heading: "I want to change a live campaign",
@@ -240,7 +240,7 @@ export const PAGES: InfoPage[] = [
       },
       {
         heading: "Backer privacy",
-        body: 'Backers are private by default. If you choose to be listed, only a short form of your name like "Priya S." is shown — never your email or amount details beyond the campaign\'s public totals.',
+        body: 'Backers are private by default. If you choose to be listed, only a short form of your name like "Emily C." is shown — never your email or amount details beyond the campaign\'s public totals.',
       },
       {
         heading: "Payments",

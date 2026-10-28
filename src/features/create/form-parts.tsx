@@ -1,14 +1,14 @@
 // Small form building blocks used across the five creation steps.
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Image } from "expo-image";
 import { useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
 import type { UploadPurpose } from "@/api/platform";
 import { ApiError } from "@/api/client";
 import { Card, Chip, Text } from "@/components/ui";
-import { pickAndUpload } from "@/lib/media";
+import { pickMedia, uploadAsset } from "@/lib/media";
 import { colors, fonts, radius, spacing, themed } from "@/theme";
 import { AiBadge, GenerateImageSheet, isAiImage } from "./generate-image";
+import { PreviewImage } from "./preview-image";
 
 export function FieldGroup({
   title,
@@ -65,7 +65,7 @@ export function StepIntro({
           hitSlop={8}
           style={({ pressed }) => [styles.pill, pressed && { backgroundColor: colors.primaryTint }]}
         >
-          <Ionicons name="sparkles" size={14} color={colors.primary} />
+          <Ionicons name="bulb" size={14} color={colors.primary} />
           <Text variant="title" color={colors.primary} style={{ fontSize: 13 }}>
             {action.label}
           </Text>
@@ -107,28 +107,34 @@ export function ImageField({
   generate?: { kind: "cover" | "ad"; suggestion: string };
 }) {
   const [busy, setBusy] = useState(false);
+  // The photo being uploaded, shown from the phone right away
+  const [pending, setPending] = useState<string | null>(null);
   const [genOpen, setGenOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pick = async () => {
     setError(null);
+    const asset = await pickMedia();
+    if (!asset) return;
+    setPending(asset.uri);
     setBusy(true);
     try {
-      const uploaded = await pickAndUpload(purpose);
-      if (uploaded) onChange(uploaded.url);
+      const uploaded = await uploadAsset(asset, purpose);
+      onChange(uploaded.url);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Upload failed. Please try again.");
     } finally {
       setBusy(false);
+      setPending(null);
     }
   };
 
   return (
     <View style={{ gap: spacing.sm }}>
-      {url ? (
+      {pending || url ? (
         <View style={[styles.drop, styles.dropFilled, { aspectRatio: aspect }]}>
-          <Image source={{ uri: url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
-          {isAiImage(url) && <AiBadge />}
+          <PreviewImage url={(pending ?? url)!} />
+          {!pending && url && isAiImage(url) && <AiBadge />}
           {busy && <Busy />}
         </View>
       ) : (
@@ -145,7 +151,7 @@ export function ImageField({
               )}
               <View style={styles.dropActions}>
                 <Chip size="sm" icon="cloud-upload-outline" label="Upload" onPress={pick} />
-                {generate && <Chip size="sm" icon="sparkles-outline" label="Generate" onPress={() => setGenOpen(true)} />}
+                {generate && <Chip size="sm" icon="color-palette-outline" label="Generate" onPress={() => setGenOpen(true)} />}
               </View>
             </View>
           )}
@@ -154,7 +160,7 @@ export function ImageField({
       {url && !busy && (
         <View style={styles.actions}>
           <Chip size="sm" icon="swap-horizontal-outline" label="Replace" onPress={pick} />
-          {generate && <Chip size="sm" icon="sparkles-outline" label="Generate" onPress={() => setGenOpen(true)} />}
+          {generate && <Chip size="sm" icon="color-palette-outline" label="Generate" onPress={() => setGenOpen(true)} />}
           <Chip size="sm" icon="trash-outline" label="Remove" onPress={() => onChange(null)} />
         </View>
       )}

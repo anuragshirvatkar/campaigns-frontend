@@ -139,7 +139,11 @@ export function HomeHero({ u }: { u: Scale }) {
         accessibilityRole="header"
         style={[styles.abs, styles.title, { left: u(28), top: u(38), fontSize: u(50), lineHeight: u(54), letterSpacing: u(-0.8) }]}
       >
-        {"Make Your\nVoice Reach\nFurther."}
+        {"Make Your\nVoice Reach\n"}
+        {/* Same headline style spelled out: nested <Text> would otherwise take the body variant */}
+        <Text maxFontSizeMultiplier={1} style={[styles.title, { color: H.accent, fontSize: u(50), lineHeight: u(54), letterSpacing: u(-0.8) }]}>
+          Further.
+        </Text>
       </Text>
       <Animated.View
         style={[
@@ -206,24 +210,6 @@ function HeroButton({
   );
 }
 
-/** Lavender panel: the per-dollar reach in one sentence. */
-export function ReachPanel({ u, perDollar }: { u: Scale; perDollar?: number }) {
-  const people = perDollar ? compactNumber(Math.round(perDollar)) : "…";
-  return (
-    <Animated.View entering={enter(100)} style={{ marginTop: u(25) }}>
-      <View style={[styles.reachCard, { borderRadius: u(30), paddingTop: u(30), paddingBottom: u(34), paddingHorizontal: u(36) }]}>
-        <Text maxFontSizeMultiplier={1} style={[styles.reachText, { fontSize: u(29), lineHeight: u(42), marginTop: 0 }]}>
-          <Text maxFontSizeMultiplier={1} style={[styles.reachDollar, { fontSize: u(36) }]}>$1 </Text> puts a message in front of about {people} people outside of
-          your network.
-        </Text>
-      </View>
-      <Text maxFontSizeMultiplier={1} style={[styles.body, styles.note, { fontSize: u(17), lineHeight: u(24), marginTop: u(12), paddingHorizontal: u(24) }]}>
-        Illustrative estimate from demo assumptions, not a guarantee.
-      </Text>
-    </Animated.View>
-  );
-}
-
 /** Featured campaign card: photo on the left; category, title, creator, funding, reach and Back This. */
 export function CampaignTile({ u, campaign: c }: { u: Scale; campaign: Campaign }) {
   const backed = useBacked().data?.some((b) => b.id === c.id) ?? false;
@@ -235,7 +221,7 @@ export function CampaignTile({ u, campaign: c }: { u: Scale; campaign: Campaign 
   return (
     <PressScale scaleTo={0.98}
       accessibilityRole="button"
-      accessibilityLabel={`${c.title}, by ${c.creatorName}`}
+      accessibilityLabel={c.title ?? "Campaign"}
       onPress={() => openCampaign(c)}
       style={({ pressed }) => [styles.tile, { borderRadius: u(22), padding: u(17), gap: u(28) }, pressed && { opacity: 0.94 }]}
     >
@@ -256,14 +242,11 @@ export function CampaignTile({ u, campaign: c }: { u: Scale; campaign: Campaign 
               ]}
             >
               <Ionicons name={cat.icon} size={u(18)} color={cat.tint} />
-              <Text maxFontSizeMultiplier={1} style={[styles.chipText, { fontSize: u(15), color: cat.tint }]}>{cat.label}</Text>
+              <Text maxFontSizeMultiplier={1} style={[styles.chipText, { fontSize: u(15), lineHeight: u(18), color: cat.tint }]}>{cat.label}</Text>
             </View>
           )}
           <Text maxFontSizeMultiplier={1} style={[styles.tileTitle, { fontSize: u(23), lineHeight: u(29), marginTop: u(10) }]} numberOfLines={2}>
             {c.title}
-          </Text>
-          <Text maxFontSizeMultiplier={1} style={[styles.body, { fontSize: u(19.5), marginTop: u(2) }]} numberOfLines={1}>
-            by {c.creatorName}
           </Text>
         </View>
         <View>
@@ -328,9 +311,6 @@ const styles = themed(() => StyleSheet.create({
     borderColor: colors.background,
   },
   guest: { backgroundColor: colors.primarySoft },
-  reachCard: { backgroundColor: H.panel },
-  reachText: { fontFamily: fonts.medium, color: H.ink, textAlign: "center", includeFontPadding: false },
-  reachDollar: { fontFamily: fonts.bold, color: H.accent },
   panel: { backgroundColor: H.panel, overflow: "hidden" },
   title: { fontFamily: fonts.bold, color: H.ink, includeFontPadding: false },
   body: { fontFamily: fonts.regular, color: H.body, includeFontPadding: false },
@@ -338,7 +318,8 @@ const styles = themed(() => StyleSheet.create({
   note: { textAlign: "center", color: colors.textMuted },
   tile: { flexDirection: "row", backgroundColor: colors.card, borderWidth: 1, borderColor: H.border },
   chip: { alignSelf: "flex-start" },
-  chipText: { fontFamily: fonts.medium, includeFontPadding: false },
+  // Line height = icon size and no font padding, so label and icon share one centre line
+  chipText: { fontFamily: fonts.medium, includeFontPadding: false, textAlignVertical: "center" },
   tileTitle: { fontFamily: fonts.semibold, color: H.ink, includeFontPadding: false },
   tileMoney: { fontFamily: fonts.medium, color: H.ink, includeFontPadding: false },
   tileReach: { fontFamily: fonts.regular, color: H.ink, includeFontPadding: false },

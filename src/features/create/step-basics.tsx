@@ -40,7 +40,7 @@ export function StepBasics({ form, set, setMany, errors, aiQuestions, setAiQuest
       {aiQuestions.length > 0 && (
         <View style={styles.questions}>
           <View style={styles.questionsHead}>
-            <Ionicons name="sparkles" size={14} color={colors.primary} />
+            <Ionicons name="bulb" size={14} color={colors.primary} />
             <Text variant="title" style={{ flex: 1, fontSize: 14 }}>
               Review the AI draft. Worth adding:
             </Text>
@@ -64,7 +64,7 @@ export function StepBasics({ form, set, setMany, errors, aiQuestions, setAiQuest
           onChangeText={(v) => set("title", v)}
           maxLength={60}
           showCounter
-          placeholder="e.g. Safe drinking water in every Pune school"
+          placeholder="e.g. Plant more shade trees along school routes"
           error={errors.title}
           hint="Its start becomes the ad headline if you don't write one."
         />
@@ -137,7 +137,7 @@ export function StepBasics({ form, set, setMany, errors, aiQuestions, setAiQuest
           maxLength={300}
           multiline
           minLines={2}
-          placeholder="e.g. Parents in Pune, 28–55"
+          placeholder="e.g. Parents in Austin, 28–55"
         />
         <TextField
           label="Why does it matter?"

@@ -285,7 +285,7 @@ function ManageView({
             <Card tone="flat" style={{ gap: 4 }}>
               <Text variant="title">Moderation feedback</Text>
               <Text variant="bodySm">
-                In review. The content, sources, visuals and targeting are checked against the campaign rules (about 20 seconds).
+                In review. The Campaigns team is checking the content, sources, visuals and targeting against the campaign rules. You’ll be notified of the decision.
               </Text>
             </Card>
           ) : (

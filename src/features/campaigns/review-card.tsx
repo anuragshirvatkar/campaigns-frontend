@@ -29,7 +29,8 @@ export function ReviewCard({ review, onFix }: { review: CampaignReview; onFix?: 
             {look.title}
           </Text>
           <Text variant="caption">
-            {review.reviewer === "ai" ? "Automated content review" : "Review checks"} · {timeAgo(review.at)}
+            {review.reviewer === "admin" ? "Reviewed by the Campaigns team" : review.reviewer === "ai" ? "Automated content review" : "Review checks"} ·{" "}
+            {timeAgo(review.at)}
           </Text>
         </View>
       </View>

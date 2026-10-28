@@ -71,39 +71,41 @@ export default function ProfileScreen() {
           ]}
         />
         <View style={styles.body}>
-          <Text variant="overline" color={colors.textMuted} style={styles.groupLabel}>
-            Your activity
-          </Text>
-          <ListRow
-            icon="megaphone-outline"
-            title="Created campaigns"
-            subtitle="Drafts, reviews, funding and reports"
-            onPress={() => router.push("/my-campaigns")}
-          />
-          <ListRow
-            icon="heart-outline"
-            title="Backed campaigns"
-            subtitle="Campaigns you've helped amplify"
-            tint={colors.coral}
-            tintBg={colors.coralSoft}
-            onPress={() => router.push("/backed")}
-          />
-          <ListRow
-            icon="notifications-outline"
-            title="Following"
-            subtitle="Campaigns you get updates from"
-            tint={colors.teal}
-            tintBg={colors.tealSoft}
-            onPress={() => router.push("/following")}
-          />
-          <ListRow
-            icon="receipt-outline"
-            title="Payment history"
-            subtitle="Receipts and payment status"
-            tint={colors.blue}
-            tintBg={colors.blueSoft}
-            onPress={() => router.push("/payments")}
-          />
+          <View>
+            <Text variant="overline" color={colors.textMuted} style={styles.groupLabel}>
+              Your activity
+            </Text>
+            <ListRow
+              icon="megaphone-outline"
+              title="Created campaigns"
+              subtitle="Drafts, reviews, funding and reports"
+              onPress={() => router.push("/my-campaigns")}
+            />
+            <ListRow
+              icon="heart-outline"
+              title="Backed campaigns"
+              subtitle="Campaigns you've helped amplify"
+              tint={colors.coral}
+              tintBg={colors.coralSoft}
+              onPress={() => router.push("/backed")}
+            />
+            <ListRow
+              icon="notifications-outline"
+              title="Following"
+              subtitle="Campaigns you get updates from"
+              tint={colors.teal}
+              tintBg={colors.tealSoft}
+              onPress={() => router.push("/following")}
+            />
+            <ListRow
+              icon="receipt-outline"
+              title="Payment history"
+              subtitle="Receipts and payment status"
+              tint={colors.blue}
+              tintBg={colors.blueSoft}
+              onPress={() => router.push("/payments")}
+            />
+          </View>
 
           <HelpLinks />
 
@@ -147,8 +149,10 @@ function HelpLinks() {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  body: { paddingHorizontal: spacing.xl },
-  statusBar: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: heroTop() },
-  groupLabel: { marginTop: spacing.xl, marginBottom: spacing.xs },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    body: { paddingHorizontal: spacing.xl },
+    statusBar: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: heroTop() },
+    groupLabel: { marginTop: spacing.xl, marginBottom: spacing.xs },
+  }),
+);

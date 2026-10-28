@@ -10,8 +10,8 @@ import { colors, spacing } from "@/theme";
 
 export default function SubmittedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  // Review is automatic in this demo: this re-checks every few seconds while it's in review, and the
-  // moment it goes live every other screen (My campaigns, Explore, Activity) refreshes too
+  // The Campaigns team reviews it: this re-checks every few seconds while it's in review, and the
+  // moment a decision arrives every other screen (My campaigns, Explore, Activity) refreshes too
   const { data: c } = useMyCampaign(id);
   const live = c?.status === "funding";
   const changes = c?.status === "changes_requested";
@@ -31,10 +31,10 @@ export default function SubmittedScreen() {
         {live
           ? "Backers can now fund its reach. Share it to get the first contributions."
           : changes
-            ? "Review found a few things to fix. Make the changes and resubmit."
+            ? "The Campaigns team asked for a few changes. Make them and resubmit."
             : rejected
               ? "This campaign doesn't meet the campaign rules, so it won't be published."
-              : "We check the story, sources, visuals and targeting against the campaign rules. In this demo it takes about 20 seconds."}
+              : "The Campaigns team checks the story, sources, visuals and targeting against the campaign rules. You'll get a notification with the decision."}
       </Text>
 
       {(changes || rejected) && c?.review && (

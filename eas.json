@@ -20,6 +20,9 @@
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "autoIncrement": true
       }
     },
     "ios-simulator": {
@@ -30,6 +33,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6825750496",
+        "appleId": "anuragshirvatkar1@gmail.com",
+        "appleTeamId": "9G78NQD2CD"
+      }
+    }
   }
 }

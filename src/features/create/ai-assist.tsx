@@ -71,7 +71,7 @@ export function AiAssistSheet({
                 error={draft.isError ? (draft.error instanceof ApiError ? draft.error.message : "AI is unavailable right now.") : null}
                 hint="AI suggests the title, summary, story and ad text. It never adds sources or sets your goal."
               />
-              <Button label="Write my draft" icon="sparkles" block loading={draft.isPending} disabled={text.trim().length < 20} onPress={() => draft.mutate()} />
+              <Button label="Write my draft" icon="bulb" block loading={draft.isPending} disabled={text.trim().length < 20} onPress={() => draft.mutate()} />
             </>
           ) : (
             <>

@@ -3,6 +3,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { Linking, Pressable, StyleSheet, View } from "react-native";
 import type { Source, StoryBlock } from "@/api/types";
+import type { IconName } from "@/lib/labels";
 import { Text } from "@/components/ui";
 import { colors, fonts, radius, spacing, themed } from "@/theme";
 
@@ -48,7 +49,7 @@ function Paragraph({ text }: { text: string }) {
   );
 }
 
-export function StoryBlocks({ blocks, sources }: { blocks: StoryBlock[]; sources: Source[] }) {
+export function StoryBlocks({ blocks, sources, statIcon = "stats-chart" }: { blocks: StoryBlock[]; sources: Source[]; statIcon?: IconName }) {
   const sourceIndex = new Map(sources.map((s, i) => [s.id, i + 1]));
   return (
     <View style={{ gap: spacing.xl }}>
@@ -85,13 +86,18 @@ export function StoryBlocks({ blocks, sources }: { blocks: StoryBlock[]; sources
             const n = b.sourceId ? sourceIndex.get(b.sourceId) : undefined;
             return (
               <View key={key} style={styles.stat}>
-                <Text variant="h1" color={colors.primary}>
-                  {b.value}
-                </Text>
-                <Text variant="body">
-                  {b.label}
-                  {n ? <Text variant="caption" color={colors.primary}>{`  [${n}]`}</Text> : null}
-                </Text>
+                <View style={styles.statIcon}>
+                  <Ionicons name={statIcon} size={22} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text variant="h2" color={colors.primary} style={{ fontFamily: fonts.bold }}>
+                    {b.value}
+                  </Text>
+                  <Text variant="bodySm">
+                    {b.label}
+                    {n ? <Text variant="caption" color={colors.primary}>{`  [${n}]`}</Text> : null}
+                  </Text>
+                </View>
               </View>
             );
           }
@@ -164,13 +170,16 @@ const styles = themed(() => StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, marginTop: 12 },
   image: { width: "100%", aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: colors.primarySoft },
   stat: {
-    gap: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
     padding: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.primaryTint,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
   },
+  statIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: colors.card },
   action: {
     flexDirection: "row",
     alignItems: "center",

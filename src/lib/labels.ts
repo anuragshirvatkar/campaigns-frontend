@@ -38,10 +38,10 @@ export const STATUS: Record<CampaignStatus, { label: string; tone: Tone; explain
   changes_requested: {
     label: "Changes requested",
     tone: "warning",
-    explain: "Review found a few things to fix. Make the changes and resubmit.",
+    explain: "The Campaigns team asked for a few changes. Make them and resubmit.",
   },
   rejected: { label: "Not approved", tone: "danger", explain: "This campaign doesn't meet the campaign rules, so it can't run." },
-  approved: { label: "Approved", tone: "info", explain: "Approved. It goes live for funding in a moment." },
+  approved: { label: "Approved", tone: "info", explain: "Approved by the Campaigns team. It goes live for funding in a moment." },
   funding: { label: "Funding", tone: "primary", explain: "Live. Backers are funding the reach of this message." },
   funded: { label: "Goal reached", tone: "success", explain: "Fully funded. The platform is preparing distribution." },
   funding_ended: {

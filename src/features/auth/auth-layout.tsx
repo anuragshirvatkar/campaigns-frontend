@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeInDown, LinearTransition } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
@@ -35,6 +35,8 @@ type Props = {
   footerPrompt: string;
   footerAction: string;
   onFooter: () => void;
+  /** "Or continue with Google" and the switch-screen footer; off for the admin sign-in */
+  alternatives?: boolean;
 };
 
 /**
@@ -42,7 +44,14 @@ type Props = {
  * button with its error, "or continue with Google" and the switch-screen footer.
  */
 export function AuthLayout(props: Props) {
-  const { art, cardTop, error } = props;
+  const { art, cardTop, error, alternatives = true } = props;
+  // The first appearance joins the screen's staggered entrance; later toggles animate on their own
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), 700);
+    return () => clearTimeout(t);
+  }, []);
+  const enterAlt = (delay: number) => (settled ? FadeInDown.duration(280).delay(delay - 350) : enterAt(delay));
   const u = useRefScale();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -149,7 +158,10 @@ export function AuthLayout(props: Props) {
               entering={enterAt(140)}
               style={[styles.abs, { left: u(64), top: u(topForBaseline(props.subtitleBaseline, 28, 37.5)) }]}
             >
-              <Text maxFontSizeMultiplier={1} style={[styles.subtitle, { fontSize: u(28), lineHeight: u(37.5) }]}>{props.subtitle}</Text>
+              {/* Cross-fades when the text changes (user / admin sign-in) */}
+              <Animated.View key={props.subtitle} entering={settled ? FadeIn.duration(260) : undefined} exiting={FadeOut.duration(160)} style={styles.abs}>
+                <Text maxFontSizeMultiplier={1} style={[styles.subtitle, { fontSize: u(28), lineHeight: u(37.5) }]}>{props.subtitle}</Text>
+              </Animated.View>
             </Animated.View>
           </Animated.View>
         </Animated.View>
@@ -186,22 +198,32 @@ export function AuthLayout(props: Props) {
               )}
             </View>
 
-            <Animated.View entering={enterAt(350)} style={[styles.orRow, { height: u(24), marginTop: gap(38.5), gap: u(26) }]}>
-              <View style={[styles.orLine, { height: u(2) }]} />
-              <Text maxFontSizeMultiplier={1} style={[styles.or, { fontSize: u(19) }]}>OR</Text>
-              <View style={[styles.orLine, { height: u(2) }]} />
-            </Animated.View>
+            {alternatives && (
+              <Animated.View exiting={FadeOutDown.duration(200)}>
+                {/* Google sign-in is set up for Android only (no iOS client yet, and on iPhone Apple
+                    requires Sign in with Apple next to it), so iPhone users sign in with email */}
+                {Platform.OS !== "ios" && (
+                  <>
+                    <Animated.View entering={enterAlt(350)} style={[styles.orRow, { height: u(24), marginTop: gap(38.5), gap: u(26) }]}>
+                      <View style={[styles.orLine, { height: u(2) }]} />
+                      <Text maxFontSizeMultiplier={1} style={[styles.or, { fontSize: u(19) }]}>OR</Text>
+                      <View style={[styles.orLine, { height: u(2) }]} />
+                    </Animated.View>
 
-            <Animated.View entering={enterAt(390)} style={{ marginTop: gap(38.5) }}>
-              <GoogleButton u={u} loading={googleBusy} onPress={continueWithGoogle} />
-            </Animated.View>
+                    <Animated.View entering={enterAlt(390)} style={{ marginTop: gap(38.5) }}>
+                      <GoogleButton u={u} loading={googleBusy} onPress={continueWithGoogle} />
+                    </Animated.View>
+                  </>
+                )}
 
-            <Animated.View entering={enterAt(430)} style={[styles.footerRow, { marginTop: gap(40), gap: u(14) }]}>
-              <Text maxFontSizeMultiplier={1} style={[styles.footer, { fontSize: u(23.5) }]}>{props.footerPrompt}</Text>
-              <Pressable accessibilityRole="link" hitSlop={{ top: 14, bottom: 14, left: 8, right: 16 }} onPress={props.onFooter}>
-                <Text maxFontSizeMultiplier={1} style={[styles.footerAction, { fontSize: u(30) }]}>{props.footerAction}</Text>
-              </Pressable>
-            </Animated.View>
+                <Animated.View entering={enterAlt(430)} style={[styles.footerRow, { marginTop: gap(40), gap: u(14) }]}>
+                  <Text maxFontSizeMultiplier={1} style={[styles.footer, { fontSize: u(23.5) }]}>{props.footerPrompt}</Text>
+                  <Pressable accessibilityRole="link" hitSlop={{ top: 14, bottom: 14, left: 8, right: 16 }} onPress={props.onFooter}>
+                    <Text maxFontSizeMultiplier={1} style={[styles.footerAction, { fontSize: u(30) }]}>{props.footerAction}</Text>
+                  </Pressable>
+                </Animated.View>
+              </Animated.View>
+            )}
           </View>
         </View>
       </ScrollView>

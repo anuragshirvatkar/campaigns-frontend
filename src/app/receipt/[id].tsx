@@ -82,10 +82,6 @@ export default function ReceiptScreen() {
         </Card>
       </View>
 
-      <Text variant="caption" color={colors.textSubtle} style={{ marginTop: spacing.lg }}>
-        {r.isSimulated ? "Simulated payment for this prototype; no real money was charged. " : ""}
-        Contributions fund the message&apos;s distribution and are not charitable donations.
-      </Text>
 
       <View style={{ gap: spacing.sm, marginTop: spacing.xl }}>
         {ok && <Button label="Share campaign" icon="share-social-outline" onPress={() => shareCampaign(r.campaign)} />}

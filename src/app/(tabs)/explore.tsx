@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
@@ -12,7 +13,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { CampaignCard } from "@/features/campaigns/campaign-card";
 import { HomeHeader, useHomeScale } from "@/features/home/home-top";
 import { CATEGORIES, CATEGORY } from "@/lib/labels";
-import { colors, fonts, radius, spacing, themed } from "@/theme";
+import { colors, dk, fonts, radius, spacing, themed } from "@/theme";
 import { Appear } from "@/components/ui/motion";
 
 const SORTS: { value: CampaignSort; label: string }[] = [
@@ -58,6 +59,19 @@ export default function ExploreScreen() {
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<Category | undefined>();
+  // Sam can open Explore with a search ("search for clean air") or a category ("show me health campaigns");
+  // `at` makes each request new, so asking twice works too
+  const asked = useLocalSearchParams<{ q?: string; cat?: string; at?: string }>();
+  const askKey = `${asked.at ?? ""}|${asked.q ?? ""}|${asked.cat ?? ""}`;
+  const [lastAsked, setLastAsked] = useState("||");
+  if (askKey !== lastAsked) {
+    setLastAsked(askKey);
+    if (asked.q !== undefined || asked.cat !== undefined) {
+      setSearch(asked.q ?? "");
+      setQ(asked.q ?? "");
+      setCategory((asked.cat || undefined) as Category | undefined);
+    }
+  }
   const [sort, setSort] = useState<CampaignSort>("newest");
   const [status, setStatus] = useState<CampaignStatus | undefined>();
 
@@ -90,11 +104,12 @@ export default function ExploreScreen() {
 
   const narrowSort = useNarrowFilters([{ label: "Newest" }, { label: "Most funded" }, { label: "More", icon: true }]);
   // A category picked from More moves to the front, so the selection is always visible
-  const ordered = category && CATEGORY_ORDER.includes(category) ? [category, ...CATEGORY_ORDER.filter((c) => c !== category)] : CATEGORY_ORDER;
-  const shownCount = useTwoLineFit(
-    [{ label: "All" }, ...ordered.map((c) => ({ label: chipLabel(c), icon: true }))],
-    { label: "More", icon: true },
-  );
+  const ordered =
+    category && CATEGORY_ORDER.includes(category) ? [category, ...CATEGORY_ORDER.filter((c) => c !== category)] : CATEGORY_ORDER;
+  const shownCount = useTwoLineFit([{ label: "All" }, ...ordered.map((c) => ({ label: chipLabel(c), icon: true }))], {
+    label: "More",
+    icon: true,
+  });
   const shownCategories = ordered.slice(0, Math.max(shownCount - 1, 0)); // minus All
   const hiddenCategories = ordered.slice(shownCategories.length);
   const pickCategory = (c: Category | undefined) => {
@@ -183,9 +198,7 @@ export default function ExploreScreen() {
 
       <View style={styles.resultsRow}>
         <Text variant="bodySm" accessibilityLiveRegion="polite">
-          {feed.isPending
-            ? "Searching…"
-            : `${items.length}${feed.hasNextPage ? "+" : ""} campaign${items.length === 1 ? "" : "s"}`}
+          {feed.isPending ? "Searching…" : `${items.length}${feed.hasNextPage ? "+" : ""} campaign${items.length === 1 ? "" : "s"}`}
         </Text>
         {filtered && (
           <Pressable accessibilityRole="button" onPress={clearAll} hitSlop={8}>
@@ -208,7 +221,14 @@ export default function ExploreScreen() {
         keyExtractor={(c) => c.id}
         renderItem={({ item, index }) => (
           <Appear index={index}>
-            <CampaignCard campaign={item} />
+            {/* The first card is what Sam's tour points at */}
+            {index === 0 ? (
+              <View>
+                <CampaignCard campaign={item} />
+              </View>
+            ) : (
+              <CampaignCard campaign={item} />
+            )}
           </Appear>
         )}
         ListHeaderComponent={header}
@@ -235,24 +255,13 @@ export default function ExploreScreen() {
               onAction={clearAll}
             />
           ) : (
-            <EmptyState
-              icon="megaphone-outline"
-              title="No campaigns yet"
-              body="New campaigns appear here once they pass review."
-            />
+            <EmptyState icon="megaphone-outline" title="No campaigns yet" body="New campaigns appear here once they pass review." />
           )
         }
-        ListFooterComponent={
-          feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} style={{ margin: spacing.xl }} /> : null
-        }
+        ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} style={{ margin: spacing.xl }} /> : null}
       />
       {shownMenu && anchor && (
-        <FilterMat
-          open={menu === shownMenu}
-          anchor={anchor}
-          onClose={closeMenu}
-          row={shownMenu === "categories" ? categoryRow : sortRow}
-        >
+        <FilterMat open={menu === shownMenu} anchor={anchor} onClose={closeMenu} row={shownMenu === "categories" ? categoryRow : sortRow}>
           {shownMenu === "categories" ? (
             <PillRow>
               {hiddenCategories.map((c) => (
@@ -287,25 +296,29 @@ export default function ExploreScreen() {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.huge },
-  search: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 50,
-  },
-  searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text, paddingVertical: 12 },
-  filterLabel: { marginTop: spacing.lg, marginBottom: 6 },
-  resultsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.huge },
+    search: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: dk("#DEDCF0", "#34355A"),
+      paddingHorizontal: spacing.lg,
+      minHeight: 50,
+    },
+    searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text, paddingVertical: 12 },
+    filterLabel: { marginTop: spacing.lg, marginBottom: 6 },
+    resultsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: spacing.xl,
+      marginBottom: spacing.md,
+    },
+  }),
+);

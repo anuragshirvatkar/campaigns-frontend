@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { ToastProvider } from "@/components/ui";
 import { AlertHost } from "@/components/ui/alert-dialog";
 import { AnimatedSplash } from "@/components/ui/animated-splash";
+import { SamLayer } from "@/features/assistant/sam";
 import { AuthProvider, useAuth } from "@/features/auth/auth-provider";
 import { usePushNotifications } from "@/features/notifications/push";
 import { OfflineScreen } from "@/features/offline/offline-screen";
@@ -46,14 +47,14 @@ function ThemedStatusBar() {
 }
 
 function RootStack({ fontsReady }: { fontsReady: boolean }) {
-  const { ready, isSignedIn } = useAuth();
-  usePushNotifications(isSignedIn);
+  const { ready, isSignedIn, isAdmin } = useAuth();
+  usePushNotifications(isSignedIn, isAdmin);
   const appReady = ready && fontsReady;
 
   // As soon as we know who's signed in, start loading what the tabs show (alongside fonts + splash)
   useEffect(() => {
-    if (ready) prefetchStartup(queryClient, isSignedIn);
-  }, [ready, isSignedIn]);
+    if (ready) prefetchStartup(queryClient, isSignedIn, isAdmin);
+  }, [ready, isSignedIn, isAdmin]);
 
   useEffect(() => {
     if (appReady) SplashScreen.hideAsync().catch(() => {});
@@ -63,7 +64,8 @@ function RootStack({ fontsReady }: { fontsReady: boolean }) {
     <>
       {appReady && (
         <ThemedTree>
-          <AppStack isSignedIn={isSignedIn} />
+          <AppStack isSignedIn={isSignedIn} isAdmin={isAdmin} />
+          <SamLayer />
           <OfflineScreen />
           <AlertHost />
         </ThemedTree>
@@ -73,7 +75,7 @@ function RootStack({ fontsReady }: { fontsReady: boolean }) {
   );
 }
 
-function AppStack({ isSignedIn }: { isSignedIn: boolean }) {
+function AppStack({ isSignedIn, isAdmin }: { isSignedIn: boolean; isAdmin: boolean }) {
   return (
     <Stack
       screenOptions={{
@@ -87,7 +89,14 @@ function AppStack({ isSignedIn }: { isSignedIn: boolean }) {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      {/* The admin gets their own app: review queue, analytics and account, nothing else */}
+      <Stack.Protected guard={isAdmin}>
+        <Stack.Screen name="(admin)" options={{ headerShown: false, animation: "fade" }} />
+        <Stack.Screen name="admin/campaign/[id]" options={{ title: "Review campaign" }} />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isAdmin}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "fade" }} />
       {/* Browsing is open to everyone; login opens as a modal when an action needs it */}
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: "modal" }} />
@@ -101,7 +110,8 @@ function AppStack({ isSignedIn }: { isSignedIn: boolean }) {
       <Stack.Protected guard={isSignedIn}>
         <Stack.Screen name="create/[id]/index" options={{ title: "Create campaign" }} />
         <Stack.Screen name="create/[id]/submitted" options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="create/voice" options={{ title: "Create with your voice" }} />
+        <Stack.Screen name="create/voice" options={{ title: "Create with voice" }} />
+        <Stack.Screen name="create/sam" options={{ title: "Create with Sam", gestureEnabled: false }} />
         <Stack.Screen name="manage/[id]" options={{ title: "Manage campaign" }} />
         <Stack.Screen name="my-campaigns" options={{ title: "My campaigns" }} />
         <Stack.Screen name="backed" options={{ title: "Backed campaigns" }} />
@@ -112,6 +122,7 @@ function AppStack({ isSignedIn }: { isSignedIn: boolean }) {
 
       {/* Open to guests: a guest payment's receipt is unlocked by the key saved at checkout */}
       <Stack.Screen name="receipt/[id]" options={{ title: "Receipt" }} />
+      </Stack.Protected>
       <Stack.Screen name="info/[page]" options={{ title: "" }} />
     </Stack>
   );

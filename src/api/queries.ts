@@ -2,13 +2,14 @@
 import { Image } from "expo-image";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/auth-provider";
 import { campaignsApi, type CampaignListQuery } from "./campaigns";
 import { contributionsApi } from "./contributions";
 import { engageApi } from "./engage";
 import { platformApi } from "./platform";
-import type { CampaignStatus, MyCampaignTab, PublicCampaign } from "./types";
+import { adminApi } from "./admin";
+import type { AdminTab, AnalyticsRange, CampaignStatus, MyCampaignTab, PublicCampaign, ReviewInput } from "./types";
 
 export const keys = {
   config: ["config"] as const,
@@ -26,6 +27,11 @@ export const keys = {
   contribution: (id: string) => ["contribution", id] as const,
   notifications: ["notifications"] as const,
   unread: ["unread"] as const,
+  admin: {
+    campaigns: (tab: AdminTab) => ["admin", "campaigns", tab] as const,
+    campaign: (id: string) => ["admin", "campaign", id] as const,
+    analytics: (days: AnalyticsRange) => ["admin", "analytics", days] as const,
+  },
 };
 
 // ─── Live status ──────────────────────────────────────────────────────────────
@@ -81,7 +87,13 @@ const feedOptions = (query: FeedQuery) => ({
  * the feeds every tab opens with, the signed-in lists, and the campaign images (pre-cached), so
  * screens open already filled in.
  */
-export function prefetchStartup(qc: QueryClient, signedIn: boolean) {
+export function prefetchStartup(qc: QueryClient, signedIn: boolean, isAdmin = false) {
+  if (isAdmin) {
+    // The admin only sees the review queue and analytics
+    void qc.prefetchQuery({ queryKey: keys.admin.campaigns("pending"), queryFn: () => adminApi.campaigns("pending") });
+    void qc.prefetchQuery({ queryKey: keys.admin.analytics("30"), queryFn: () => adminApi.analytics("30") });
+    return;
+  }
   const feeds: FeedQuery[] = [{ featured: true, sort: "most_funded" }, { sort: "newest" }];
   void qc.prefetchQuery({ queryKey: keys.config, queryFn: platformApi.config, staleTime: Infinity });
   for (const query of feeds) {
@@ -252,4 +264,31 @@ export function invalidateFunding(qc: ReturnType<typeof useQueryClient>) {
   for (const key of [["campaigns"], ["campaign"], keys.backed, keys.history, keys.following, keys.notifications, keys.unread, ["my-campaigns"]]) {
     qc.invalidateQueries({ queryKey: key });
   }
+}
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+/** The admin's review queue for one tab; new submissions arrive on their own, so it re-checks gently. */
+export function useAdminCampaigns(tab: AdminTab) {
+  return useQuery({ queryKey: keys.admin.campaigns(tab), queryFn: () => adminApi.campaigns(tab), refetchInterval: 15_000 });
+}
+
+export function useAdminCampaign(id: string) {
+  return useQuery({ queryKey: keys.admin.campaign(id), queryFn: () => adminApi.campaign(id), enabled: !!id });
+}
+
+export function useAdminReview(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ReviewInput) => adminApi.review(id, input),
+    onSuccess: (campaign) => {
+      qc.setQueryData(keys.admin.campaign(id), campaign);
+      void qc.invalidateQueries({ queryKey: ["admin"] });
+    },
+  });
+}
+
+export function useAdminAnalytics(days: AnalyticsRange) {
+  // Switching range keeps the previous numbers on screen until the new ones arrive
+  return useQuery({ queryKey: keys.admin.analytics(days), queryFn: () => adminApi.analytics(days), refetchInterval: 30_000, placeholderData: keepPreviousData });
 }

@@ -52,7 +52,7 @@ export function StepReach({ form, set, errors, config }: Props) {
           <TagInput
             values={r.locations}
             onChange={(locations) => setReach({ locations })}
-            placeholder="Add a location, e.g. Pune"
+            placeholder="Add a location, e.g. Austin"
           />
         </FieldGroup>
 

@@ -55,11 +55,14 @@ export function ProfileHero({
   email,
   avatarUrl,
   stats,
+  showSettings = true,
 }: {
   name: string;
   email: string;
   avatarUrl: string | null | undefined;
   stats: Stat[];
+  /** The gear to Account settings (the admin has no settings screen) */
+  showSettings?: boolean;
 }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -121,6 +124,7 @@ export function ProfileHero({
         />
       </Svg>
 
+      {showSettings && (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Account settings"
@@ -141,6 +145,7 @@ export function ProfileHero({
       >
         <Ionicons name="settings" size={u(36)} color={colors.text} />
       </Pressable>
+      )}
 
       <View
         style={[

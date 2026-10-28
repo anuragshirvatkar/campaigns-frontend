@@ -7,7 +7,8 @@ import { Button, EmptyState, ErrorState, Screen, Text } from "@/components/ui";
 import { useTabBarSpace } from "@/components/ui/tab-bar";
 import { useAuth } from "@/features/auth/auth-provider";
 import { FeaturedRowSkeleton, HOME, HowItWorks } from "@/features/home/home-parts";
-import { CampaignTile, HomeHeader, HomeHero, ReachPanel, useHomeScale } from "@/features/home/home-top";
+import { CampaignTile, HomeHeader, HomeHero, useHomeScale } from "@/features/home/home-top";
+import { ReachPanel } from "@/features/home/reach-panel";
 import { colors, fonts, spacing, themed, dk } from "@/theme";
 import { Appear } from "@/components/ui/motion";
 
@@ -42,7 +43,9 @@ export default function HomeScreen() {
       contentContainerStyle={{ paddingHorizontal: u(22) }}
     >
       <HomeHeader u={u} hasUnread={hasUnread} user={isSignedIn && user ? user : null} />
-      <HomeHero u={u} />
+      <View>
+        <HomeHero u={u} />
+      </View>
       <ReachPanel u={u} perDollar={config.data?.reach.reachPerDollar} />
 
       <View style={[styles.separator, { marginTop: u(34) }]} />
@@ -111,7 +114,6 @@ export default function HomeScreen() {
           )}
         </View>
       </View>
-
     </Screen>
   );
 }
@@ -132,15 +134,16 @@ function SectionTitle({ title, action, onAction, size }: { title: string; action
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  separator: { height: 1, backgroundColor: colors.divider },
-  stepsPanel: { backgroundColor: dk("#F7F6FE", "#16152D"), borderRadius: 24, padding: spacing.lg },
-  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
-  sectionTitle: { fontFamily: fonts.bold, fontSize: 20, color: HOME.ink },
-  sectionSub: { fontFamily: fonts.regular, fontSize: 14, color: HOME.body, marginTop: 2, marginBottom: spacing.lg },
-  seeAll: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32 },
-  seeAllText: { fontFamily: fonts.semibold, fontSize: 14, color: HOME.accent },
-  list: { gap: spacing.md },
-  muted: { fontFamily: fonts.regular, fontSize: 14, color: HOME.body },
-
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    separator: { height: 1, backgroundColor: colors.divider },
+    stepsPanel: { backgroundColor: dk("#F7F6FE", "#16152D"), borderRadius: 24, padding: spacing.lg },
+    sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
+    sectionTitle: { fontFamily: fonts.bold, fontSize: 20, color: HOME.ink },
+    sectionSub: { fontFamily: fonts.regular, fontSize: 14, color: HOME.body, marginTop: 2, marginBottom: spacing.lg },
+    seeAll: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32 },
+    seeAllText: { fontFamily: fonts.semibold, fontSize: 14, color: HOME.accent },
+    list: { gap: spacing.md },
+    muted: { fontFamily: fonts.regular, fontSize: 14, color: HOME.body },
+  }),
+);

@@ -28,6 +28,12 @@ export function StepSubmit({ form, set, errors, config, readiness, goToStep }: P
   const [goalText, setGoalText] = useState(form.fundingGoalCents ? String(form.fundingGoalCents / 100) : "");
   const { minGoalCents, maxGoalCents } = config.funding;
   const typed = parseDollars(goalText);
+  // A goal set from outside the field (Sam heard it) shows up in the field too
+  const [seenGoal, setSeenGoal] = useState(form.fundingGoalCents);
+  if (form.fundingGoalCents !== seenGoal) {
+    setSeenGoal(form.fundingGoalCents);
+    if (form.fundingGoalCents !== null && form.fundingGoalCents !== typed) setGoalText(String(form.fundingGoalCents / 100));
+  }
   const inRange = (cents: number | null) => cents !== null && cents >= minGoalCents && cents <= maxGoalCents;
   // Only a valid goal is stored (and autosaved); the field keeps what was typed
   const goal = inRange(typed) ? typed : null;

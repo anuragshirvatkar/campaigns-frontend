@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { campaignsApi } from "@/api/campaigns";
+import { platformApi } from "@/api/platform";
 import { ApiError } from "@/api/client";
 import { keys, useConfig } from "@/api/queries";
 import Animated, { FadeInLeft, FadeInRight, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -19,7 +20,10 @@ import { StepStory } from "@/features/create/step-story";
 import { StepSubmit } from "@/features/create/step-submit";
 import { StepVisuals } from "@/features/create/step-visuals";
 import { ReviewCard } from "@/features/campaigns/review-card";
-import { useDraft, validateStep, type FieldErrors } from "@/features/create/use-draft";
+import { localId, useDraft, validateStep, type DraftForm, type FieldErrors } from "@/features/create/use-draft";
+import { announceImageReady, endSamSession, registerEditor, useSamSession, useSamTalking } from "@/features/assistant/bridge";
+import { SamImageOverlay, SamModeBar } from "@/features/assistant/sam-mode";
+import { BlurTargetView } from "expo-blur";
 import { STATUS } from "@/lib/labels";
 import { goBackOr } from "@/lib/nav";
 import { colors, fonts, spacing, themed } from "@/theme";
@@ -102,7 +106,12 @@ function Editor({ id }: { id: string }) {
 }
 
 function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> }) {
-  const { campaign, form, set, setMany, save, saveState, saveError, hasUnsaved, isDraft } = draft;
+  const { campaign, form, getForm, set, setMany, save, saveState, saveError, hasUnsaved, isDraft } = draft;
+  // Creating with Sam: the form is his (one thing at a time) until the last step, which is the user's
+  const samMode = useSamSession(id);
+  // While Sam is talking with the user the fields are his; when he's quiet the user can edit them
+  const samTalking = useSamTalking();
+  const blurRef = useRef<View>(null);
   const c = campaign!;
   const f = form!;
   const config = useConfig().data!;
@@ -113,6 +122,7 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
   // "Fix in Story ›" from a review opens the step to fix; otherwise resume where the creator left off
   const { step: stepParam } = useLocalSearchParams<{ step?: string }>();
   const [step, setStep] = useState(() => Math.min(Math.max(Number(stepParam) || c.currentStep || 1, 1), 5));
+  const samDriving = samMode && step < 5 && samTalking;
   // Steps slide in from the side you're moving towards
   const [forward, setForward] = useState(true);
   // Errors appear once Continue/Submit is tried on a step, then follow the form live: each one
@@ -131,9 +141,70 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
     if (isDraft) void save({ currentStep: next });
   };
 
+  // Sam can create the cover or an ad image (~30 s); the editor shows it's on the way
+  const [samImage, setSamImage] = useState<"cover" | "ad" | null>(null);
+  const samImageRef = useRef<"cover" | "ad" | null>(null);
+  useEffect(() => skippedOptional.clear(), [id]);
+  const generateImage = (kind: "cover" | "ad", prompt: string) => {
+    if (samImageRef.current) return;
+    samImageRef.current = kind;
+    setSamImage(kind);
+    platformApi
+      .generateImage(prompt, kind)
+      .then((img) => {
+        const { getForm: now, set: put } = latest.current;
+        if (kind === "cover") put("coverImageUrl", img.url);
+        else
+          put("adAssets", [
+            ...(now()?.adAssets ?? []),
+            { id: localId("a"), type: "image", url: img.url, width: img.width, height: img.height, aiGenerated: true },
+          ]);
+        toast(kind === "cover" ? "Sam added your cover image" : "Sam added an ad image");
+        announceImageReady(kind);
+      })
+      .catch((err) => toast(err instanceof ApiError ? err.message : "Sam couldn't create the image. Try again.", "error"))
+      .finally(() => {
+        samImageRef.current = null;
+        setSamImage(null);
+      });
+  };
+
+  // Sam can read this draft, fill it in from what the user says, and move between steps
+  const latest = useRef({ f, getForm, set, setMany, step, goToStep, generateImage, durations: config.funding.durationDays });
+  useEffect(() => {
+    latest.current = { f, getForm, set, setMany, step, goToStep, generateImage, durations: config.funding.durationDays };
+  });
+  useEffect(
+    () =>
+      registerEditor({
+        campaignId: id,
+        get step() {
+          return latest.current.step;
+        },
+        values: () => samValues(latest.current.f),
+        missing: () => samMissing(latest.current.f),
+        stepMissing: () => samStepMissing(latest.current.step, latest.current.f),
+        stepMissingAt: (n) => samStepMissing(n, latest.current.f),
+        fill: (field, value) => samFill(latest.current, field, value),
+        goToStep: (n) => latest.current.goToStep(Math.min(5, Math.max(1, n))),
+        generateImage: (kind, prompt) => latest.current.generateImage(kind, prompt),
+        creatingImage: () => samImageRef.current,
+      }),
+    [id],
+  );
+
   const back = () => {
+    if (samMode) return void exitSam();
     if (step > 1) goToStep(step - 1);
     else leave();
+  };
+
+  // Leaving Sam mode: Sam stops, the draft is saved, and the user is back where they started
+  const exitSam = async () => {
+    endSamSession();
+    const saved = await save();
+    toast(saved ? "Draft saved. Find it in Create, under Your drafts." : "Left creating with Sam.");
+    goBackOr("/create");
   };
 
   const leave = () => {
@@ -229,7 +300,15 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
       <Stack.Screen
         options={{
           title: c.status === "changes_requested" ? "Fix campaign" : isDraft ? "Create campaign" : "Edit campaign",
-          headerLeft: () => <IconButton icon="arrow-back" label={step > 1 ? "Previous step" : "Close"} onPress={back} />,
+          // iPhone swipe-back would skip what the back button does here (previous step, unsaved-changes
+          // check, saving when leaving Sam mode), so leaving goes through the button, as on Android
+          gestureEnabled: false,
+          headerLeft: () =>
+            samMode ? (
+              <IconButton icon="close" label="Exit creating with Sam" onPress={exitSam} />
+            ) : (
+              <IconButton icon="arrow-back" label={step > 1 ? "Previous step" : "Close"} onPress={back} />
+            ),
           headerRight: () => <SaveIndicator state={saveState} isDraft={isDraft} hasUnsaved={hasUnsaved} />,
         }}
       />
@@ -237,7 +316,9 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
       <View style={styles.progress}>
         <StepBars step={step} />
       </View>
+      {samMode && <SamModeBar yourTurn={step === 5} talking={samTalking} onExit={exitSam} />}
 
+      <BlurTargetView ref={blurRef} style={{ flex: 1 }} collapsable={false}>
       <ScrollView
         ref={scroll}
         keyboardShouldPersistTaps="handled"
@@ -255,7 +336,13 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
         )}
         {saveState === "error" && saveError && <Note tone="danger">{`Not saved: ${saveError}`}</Note>}
 
-        <Animated.View key={step} entering={(forward ? FadeInRight : FadeInLeft).duration(260)} style={{ gap: spacing.lg }}>
+        {/* While Sam is talking the fields can be seen and scrolled but not touched; they open when he's quiet */}
+        <Animated.View
+          key={step}
+          entering={(forward ? FadeInRight : FadeInLeft).duration(260)}
+          style={{ gap: spacing.lg }}
+          pointerEvents={samDriving ? "none" : "auto"}
+        >
           {step === 1 && (
             <StepBasics
               form={f}
@@ -274,6 +361,7 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
           )}
         </Animated.View>
       </ScrollView>
+      </BlurTargetView>
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + spacing.md }]}>
         {step > 1 && <IconButton icon="arrow-back" label="Previous step" variant="soft" onPress={back} />}
@@ -302,6 +390,7 @@ function Wizard({ id, draft }: { id: string; draft: ReturnType<typeof useDraft> 
           <IconButton icon="eye-outline" label="Preview campaign" variant="soft" onPress={() => setPreview(true)} />
         )}
       </View>
+      {samImage && <SamImageOverlay kind={samImage} blurTarget={blurRef} />}
       <CampaignPreviewModal visible={preview} onClose={() => setPreview(false)} form={f} />
     </KeyboardAvoidingView>
   );
@@ -404,3 +493,170 @@ const styles = themed(() => StyleSheet.create({
   },
   saved: { flexDirection: "row", alignItems: "center", gap: 4 },
 }));
+
+// ─── Sam ↔ editor ─────────────────────────────────────────────────────────────
+
+const CATEGORIES = ["environment", "health", "science", "education", "public_policy", "economic_policy", "community", "arts_culture", "business", "other"];
+const CREATOR_TYPES = ["individual", "influencer", "nonprofit", "organization", "business", "community_group"];
+const TEXT_FIELDS = [
+  "title",
+  "summary",
+  "creatorName",
+  "creatorDescription",
+  "targetAudience",
+  "whyItMatters",
+  "storyHeadline",
+  "storyIntro",
+  "adHeadline",
+  "adDescription",
+  "ctaText",
+] as const;
+
+function samValues(f: DraftForm): Record<string, string | number | boolean | null> {
+  const out: Record<string, string | number | boolean | null> = {};
+  for (const k of TEXT_FIELDS) out[k] = f[k] || null;
+  out.category = f.category;
+  out.creatorType = f.creatorType;
+  out.storyParagraphs = f.storyBlocks.filter((b) => b.type === "paragraph").length;
+  // The story itself (shortened), so Sam can talk about this campaign like he knows it
+  out.storyText =
+    f.storyBlocks
+      .filter((b) => b.type === "paragraph")
+      .map((b) => b.text)
+      .join(" ")
+      .slice(0, 500) || null;
+  out.sources = f.sources.length;
+  out.coverImage = f.coverImageUrl ? "added" : null;
+  out.adImages = f.adAssets.length;
+  out.locations = f.reach.locations.join(", ") || null;
+  out.fundingGoalDollars = f.fundingGoalCents ? f.fundingGoalCents / 100 : null;
+  out.durationDays = f.durationDays;
+  out.channels = f.reach.channels.join(", ") || null;
+  out.facebookPercent = f.reach.channels.length === 2 ? (f.reach.budgetSplit.facebook ?? null) : null;
+  out.ageMin = f.reach.ageMin ?? null;
+  out.ageMax = f.reach.ageMax ?? null;
+  out.interests = f.reach.interests.join(", ") || null;
+  out.rulesAccepted = f.rulesAccepted;
+  return out;
+}
+
+// Validation keys → the names Sam uses
+const SAM_NAMES: Record<string, string> = {
+  coverImageUrl: "coverImage",
+  storyBlocks: "storyParagraph",
+  adAssets: "adImage",
+  budgetSplit: "facebookPercent",
+  age: "ageMin/ageMax",
+  fundingGoalCents: "fundingGoalDollars",
+  rulesAccepted: "rulesAccepted (user ticks it)",
+};
+
+// Optional Reach details Sam asks about once; "skip" means the user doesn't mind (cleared per editor)
+const skippedOptional = new Set<string>();
+
+/** What blocks the step on screen, in Sam's field names (plus the optional Reach details he asks once). */
+function samStepMissing(step: number, f: DraftForm) {
+  const out = Object.keys(validateStep(step, f)).map((k) => SAM_NAMES[k] ?? k);
+  if (step === 4) {
+    if (f.reach.ageMin == null && !skippedOptional.has("ageRange")) out.push("ageRange (optional, ask once)");
+    if (f.reach.interests.length === 0 && !skippedOptional.has("interests"))
+      out.push("interests (optional, ask once)");
+  }
+  return out;
+}
+
+const SKIP = /^(skip|none|no|nothing|any|all|doesn't matter|does not matter|not needed)\b/i;
+
+/** Everything any step still needs, by field name. */
+function samMissing(f: DraftForm) {
+  const keys = new Set<string>();
+  for (let s = 1; s <= 5; s++) Object.keys(validateStep(s, f)).forEach((k) => keys.add(k));
+  return [...keys];
+}
+
+type Latest = { f: DraftForm; getForm: () => DraftForm | null; set: <K extends keyof DraftForm>(k: K, v: DraftForm[K]) => void; setMany: (v: Partial<DraftForm>) => void; durations: number[] };
+
+const list = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
+
+function samFill({ f: rendered, getForm, set, setMany, durations }: Latest, field: string, value: string) {
+  // Several fills arrive at once (e.g. places and ages): each builds on the previous one, not on the last render
+  const f = getForm() ?? rendered;
+  const v = value.trim();
+  if ((TEXT_FIELDS as readonly string[]).includes(field)) {
+    set(field as (typeof TEXT_FIELDS)[number], field === "title" ? v.slice(0, 60) : v);
+    return true;
+  }
+  switch (field) {
+    case "category":
+      if (!CATEGORIES.includes(v)) return false;
+      set("category", v as DraftForm["category"]);
+      return true;
+    case "creatorType":
+      if (!CREATOR_TYPES.includes(v)) return false;
+      set("creatorType", v as DraftForm["creatorType"]);
+      return true;
+    case "storyParagraph":
+      setMany({ storyBlocks: [...f.storyBlocks, { id: localId("b"), type: "paragraph", text: v }] });
+      return true;
+    case "fundingGoalDollars": {
+      const n = Math.round(Number(v.replace(/[^0-9.]/g, "")));
+      if (!n) return false;
+      set("fundingGoalCents", Math.min(100_000, Math.max(100, n)) * 100);
+      return true;
+    }
+    case "durationDays": {
+      const n = Number(v);
+      if (!durations.includes(n)) return false;
+      set("durationDays", n);
+      return true;
+    }
+    case "locations":
+      set("reach", { ...f.reach, locations: list(v) });
+      return true;
+    case "interests":
+      if (SKIP.test(v)) {
+        skippedOptional.add("interests");
+        return true;
+      }
+      set("reach", { ...f.reach, interests: list(v) });
+      return true;
+    case "channels": {
+      const w = v.toLowerCase();
+      const channels = (["facebook", "instagram"] as const).filter((c) => w.includes(c) || w.includes("both"));
+      if (!channels.length) return false;
+      set("reach", {
+        ...f.reach,
+        channels: [...channels],
+        budgetSplit: channels.length === 2 ? { facebook: 50, instagram: 50 } : { [channels[0]!]: 100 },
+      });
+      return true;
+    }
+    case "facebookPercent": {
+      const n = Math.round(Number(v.replace(/[^0-9.]/g, "")));
+      if (Number.isNaN(n) || f.reach.channels.length !== 2) return false;
+      const fb = Math.min(100, Math.max(0, n));
+      set("reach", { ...f.reach, budgetSplit: { facebook: fb, instagram: 100 - fb } });
+      return true;
+    }
+    case "ageRange": {
+      if (SKIP.test(v)) {
+        skippedOptional.add("ageRange");
+        return true;
+      }
+      const [lo, hi] = (v.match(/\d+/g) ?? []).map(Number);
+      if (!lo) return false;
+      const clamp = (n: number) => Math.min(65, Math.max(13, n));
+      set("reach", { ...f.reach, ageMin: clamp(lo), ageMax: hi ? clamp(hi) : f.reach.ageMax });
+      return true;
+    }
+    case "ageMin":
+    case "ageMax": {
+      const n = Math.round(Number(v.replace(/[^0-9]/g, "")));
+      if (!n) return false;
+      set("reach", { ...f.reach, [field]: Math.min(65, Math.max(13, n)) });
+      return true;
+    }
+    default:
+      return false;
+  }
+}

@@ -175,7 +175,7 @@ export const type = themed(() => ({
   title: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 21, color: colors.text },
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 23, color: colors.text },
   // Long-form story text: larger and airier for reading
-  article: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 28, color: colors.text },
+  article: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 25, color: colors.text },
   bodySm: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textMuted },
   caption: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, color: colors.textMuted },
   // Small uppercase label above titles ("STEP 1 OF 5", "HEALTH")

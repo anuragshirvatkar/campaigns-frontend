@@ -54,13 +54,15 @@ export default function CreateTab() {
   return (
     <View style={{ flex: 1 }}>
       <Screen padded={false} bottomInset={tabSpace} onRefresh={() => drafts.refetch()} refreshing={drafts.isRefetching}>
-        <CreateHero
-          starting={false}
-          onManual={() => router.push({ pathname: "/create/[id]", params: { id: "new" } })}
-          onVoice={() => router.push("/create/voice")}
-          hasUnread={(unread.data?.count ?? 0) > 0}
-          user={user}
-        />
+        <View>
+          <CreateHero
+            starting={false}
+            onManual={() => router.push({ pathname: "/create/[id]", params: { id: "new" } })}
+            onVoice={() => router.push("/create/voice")}
+            hasUnread={(unread.data?.count ?? 0) > 0}
+            user={user}
+          />
+        </View>
         <StepsStrip />
 
         <View style={styles.draftsHead}>
@@ -84,7 +86,12 @@ export default function CreateTab() {
             <Skeleton height={96} round={radius.lg} />
           </View>
         ) : items.length === 0 ? (
-          <EmptyState compact icon="document-text-outline" title="No drafts yet" body="Anything you start is saved here, so you can come back to it any time." />
+          <EmptyState
+            compact
+            icon="document-text-outline"
+            title="No drafts yet"
+            body="Anything you start is saved here, so you can come back to it any time."
+          />
         ) : (
           items.map((d) => (
             <DraftTile
@@ -103,15 +110,17 @@ export default function CreateTab() {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  draftsHead: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.xxl,
-    marginBottom: spacing.md,
-  },
-  allLink: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 40 },
-  statusBar: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.background },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    draftsHead: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.xl,
+      marginTop: spacing.xxl,
+      marginBottom: spacing.md,
+    },
+    allLink: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 40 },
+    statusBar: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.background },
+  }),
+);

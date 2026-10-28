@@ -1,6 +1,7 @@
 // Pick photos/videos from the library and upload them through the backend (which stores them on Cloudinary).
 import * as ImagePicker from "expo-image-picker";
 import { platformApi, type UploadPurpose } from "@/api/platform";
+import { rememberLocalCopy } from "./image-preview";
 
 export type PickKind = "images" | "videos";
 
@@ -16,6 +17,12 @@ export async function pickMedia(kinds: PickKind[] = ["images"]) {
 }
 
 export async function uploadAsset(asset: ImagePicker.ImagePickerAsset, purpose: UploadPurpose) {
+  const up = await sendAsset(asset, purpose);
+  if (up.type === "image") rememberLocalCopy(up.url, asset.uri);
+  return up;
+}
+
+function sendAsset(asset: ImagePicker.ImagePickerAsset, purpose: UploadPurpose) {
   const isVideo = asset.type === "video";
   const type = asset.mimeType ?? (isVideo ? "video/mp4" : "image/jpeg");
   const ext = type.split("/")[1]?.replace("quicktime", "mov").replace("jpeg", "jpg") ?? (isVideo ? "mp4" : "jpg");

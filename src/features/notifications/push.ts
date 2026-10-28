@@ -63,15 +63,20 @@ function dataOf(response: NotificationResponse | null, key: "campaignId" | "cont
 }
 
 /** Payment pushes open their receipt; everything else opens the campaign. */
-function openFromPush(response: NotificationResponse | null) {
+function openFromPush(response: NotificationResponse | null, isAdmin: boolean) {
   const contributionId = dataOf(response, "contributionId");
   const campaignId = dataOf(response, "campaignId");
+  // The admin's pushes are new submissions: open them for review
+  if (isAdmin) {
+    if (campaignId) router.push({ pathname: "/admin/campaign/[id]", params: { id: campaignId } });
+    return;
+  }
   if (contributionId) router.push({ pathname: "/receipt/[id]", params: { id: contributionId } });
   else if (campaignId) router.push({ pathname: "/campaign/[id]", params: { id: campaignId } });
 }
 
 /** Registers this device for pushes while signed in, and opens the campaign when a push is tapped. */
-export function usePushNotifications(isSignedIn: boolean) {
+export function usePushNotifications(isSignedIn: boolean, isAdmin = false) {
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -91,7 +96,7 @@ export function usePushNotifications(isSignedIn: boolean) {
     // The push that launched the app from closed
     N.getLastNotificationResponseAsync()
       .then((response) => {
-        openFromPush(response);
+        openFromPush(response, isAdmin);
         return N.clearLastNotificationResponseAsync();
       })
       .catch(() => {});
@@ -101,12 +106,13 @@ export function usePushNotifications(isSignedIn: boolean) {
       // Same keys as keys.unread / keys.notifications in api/queries (not imported: queries -> auth -> push)
       void qc.invalidateQueries({ queryKey: ["unread"] });
       void qc.invalidateQueries({ queryKey: ["notifications"] });
+      void qc.invalidateQueries({ queryKey: ["admin"] }); // a new submission for the admin
     });
     // Tapped while the app was open or in the background
-    const tapped = N.addNotificationResponseReceivedListener((response) => openFromPush(response));
+    const tapped = N.addNotificationResponseReceivedListener((response) => openFromPush(response, isAdmin));
     return () => {
       received.remove();
       tapped.remove();
     };
-  }, [qc]);
+  }, [qc, isAdmin]);
 }

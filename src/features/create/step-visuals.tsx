@@ -2,7 +2,6 @@
 // placement previews, warnings for missing assets and optional AI creative feedback.
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useMutation } from "@tanstack/react-query";
-import { Image } from "expo-image";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ApiError } from "@/api/client";
@@ -14,6 +13,7 @@ import { pickMedia, uploadAsset } from "@/lib/media";
 import { colors, radius, spacing, themed } from "@/theme";
 import { FieldGroup, FormSection, StepIntro } from "./form-parts";
 import { AiBadge, GenerateImageSheet } from "./generate-image";
+import { PreviewImage } from "./preview-image";
 import { imageSuggestion } from "./step-basics";
 import { localId, type DraftForm, type FieldErrors } from "./use-draft";
 
@@ -89,7 +89,7 @@ export function StepVisuals({ form, set, errors }: Props) {
             <View key={a.id} style={styles.asset}>
               {a.type === "image" ? (
                 <>
-                  <Image source={{ uri: a.url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  <PreviewImage url={a.url} />
                   {a.aiGenerated && <AiBadge style={{ top: 6, left: 6 }} />}
                 </>
               ) : (
@@ -141,7 +141,7 @@ export function StepVisuals({ form, set, errors }: Props) {
               onPress={() => setGenOpen(true)}
               style={[styles.asset, styles.addAsset]}
             >
-              <Ionicons name="sparkles-outline" size={24} color={colors.primary} />
+              <Ionicons name="bulb-outline" size={24} color={colors.primary} />
               <Text variant="caption" color={colors.primary}>
                 Generate
               </Text>
@@ -236,7 +236,7 @@ export function StepVisuals({ form, set, errors }: Props) {
 
       <Card tone="tinted" style={{ gap: spacing.md }}>
         <View style={{ flexDirection: "row", gap: spacing.sm, alignItems: "center" }}>
-          <Ionicons name="sparkles" size={18} color={colors.primary} />
+          <Ionicons name="bulb" size={18} color={colors.primary} />
           <Text variant="title" style={{ flex: 1 }}>
             Get AI feedback
           </Text>
@@ -271,7 +271,7 @@ export function StepVisuals({ form, set, errors }: Props) {
         <Button
           label={feedback.data ? "Get feedback again" : "Get feedback"}
           variant="secondary"
-          icon="sparkles-outline"
+          icon="bulb-outline"
           loading={feedback.isPending}
           disabled={!firstImage}
           onPress={() => feedback.mutate()}

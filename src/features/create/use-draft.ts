@@ -228,10 +228,14 @@ export function useDraft(id: string) {
     [id, qc],
   );
 
+  /** The form as it is right now, including changes made since the last render */
+  const getForm = useCallback(() => formRef.current, []);
+
   return {
     query,
     campaign,
     form,
+    getForm,
     set,
     setMany,
     save,

@@ -166,55 +166,57 @@ function NotificationsList() {
 
   return (
     <View ref={rootRef} collapsable={false} style={{ flex: 1 }}>
-      <SectionList
-        onScrollBeginDrag={close}
-        sections={sections}
-        stickySectionHeadersEnabled={false}
-        keyExtractor={(n) => n.id}
-        contentContainerStyle={{ paddingBottom: spacing.huge + tabSpace }}
-        ItemSeparatorComponent={() => <View style={styles.hairline} />}
-        refreshing={query.isRefetching && !query.isFetchingNextPage}
-        onRefresh={() => {
-          void query.refetch();
-          void qc.invalidateQueries({ queryKey: keys.unread });
-        }}
-        onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
-        ListHeaderComponent={
-          <View ref={rowRef} collapsable={false} style={styles.listHead}>
-            {filterRow}
-          </View>
-        }
-        renderSectionHeader={({ section }) => (
-          <View style={styles.sectionHead}>
-            <Text variant="title" style={{ fontSize: 15 }}>
-              {section.title}
-            </Text>
-            {/* "Mark all read" lives on the first group, so it costs no row of its own */}
-            {hasUnread && section === sections[0] && (
-              <Pressable accessibilityRole="button" onPress={() => markAll.mutate()} hitSlop={10} style={styles.markAll}>
-                <Ionicons name="checkmark-done" size={17} color={colors.primary} />
-                <Text variant="title" color={colors.primary} style={{ fontSize: 14 }}>
-                  Mark all read
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        )}
-        renderItem={({ item, index }) => <NotificationItem n={item} onPress={() => open(item)} />}
-        ListEmptyComponent={
-          <EmptyState
-            compact
-            icon="notifications-off-outline"
-            title={filter === "all" ? "No notifications yet" : "Nothing here"}
-            body={
-              filter === "all" ? "Back or follow a campaign and its milestones will show up here." : "No notifications of this kind yet."
-            }
-            actionLabel={filter === "all" ? "Explore campaigns" : undefined}
-            onAction={() => router.navigate("/explore")}
-          />
-        }
-        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : null}
-      />
+      <View style={{ flex: 1 }}>
+        <SectionList
+          onScrollBeginDrag={close}
+          sections={sections}
+          stickySectionHeadersEnabled={false}
+          keyExtractor={(n) => n.id}
+          contentContainerStyle={{ paddingBottom: spacing.huge + tabSpace }}
+          ItemSeparatorComponent={() => <View style={styles.hairline} />}
+          refreshing={query.isRefetching && !query.isFetchingNextPage}
+          onRefresh={() => {
+            void query.refetch();
+            void qc.invalidateQueries({ queryKey: keys.unread });
+          }}
+          onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
+          ListHeaderComponent={
+            <View ref={rowRef} collapsable={false} style={styles.listHead}>
+              {filterRow}
+            </View>
+          }
+          renderSectionHeader={({ section }) => (
+            <View style={styles.sectionHead}>
+              <Text variant="title" style={{ fontSize: 15 }}>
+                {section.title}
+              </Text>
+              {/* "Mark all read" lives on the first group, so it costs no row of its own */}
+              {hasUnread && section === sections[0] && (
+                <Pressable accessibilityRole="button" onPress={() => markAll.mutate()} hitSlop={10} style={styles.markAll}>
+                  <Ionicons name="checkmark-done" size={17} color={colors.primary} />
+                  <Text variant="title" color={colors.primary} style={{ fontSize: 14 }}>
+                    Mark all read
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+          renderItem={({ item, index }) => <NotificationItem n={item} onPress={() => open(item)} />}
+          ListEmptyComponent={
+            <EmptyState
+              compact
+              icon="notifications-off-outline"
+              title={filter === "all" ? "No notifications yet" : "Nothing here"}
+              body={
+                filter === "all" ? "Back or follow a campaign and its milestones will show up here." : "No notifications of this kind yet."
+              }
+              actionLabel={filter === "all" ? "Explore campaigns" : undefined}
+              onAction={() => router.navigate("/explore")}
+            />
+          }
+          ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : null}
+        />
+      </View>
       {shownMenu && anchor && (
         <FilterMat open={menu === shownMenu} anchor={anchor} onClose={close} row={filterRow}>
           <PillRow>

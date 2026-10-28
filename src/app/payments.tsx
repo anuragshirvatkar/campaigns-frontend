@@ -73,9 +73,6 @@ export default function PaymentsScreen() {
           }
         />
       )}
-      <Text variant="caption" color={colors.textSubtle} style={{ marginTop: spacing.lg }}>
-        Payments are simulated in this prototype. No real money is charged.
-      </Text>
     </View>
   );
 }

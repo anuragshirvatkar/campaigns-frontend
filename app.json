@@ -10,7 +10,11 @@
     "owner": "anuragshirvatkar1",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.anuragshirvatkar.campaigns"
+      "bundleIdentifier": "com.humanityfounders.campaign",
+      "buildNumber": "2",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.anuragshirvatkar.campaigns",
@@ -40,7 +44,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Campaigns uses the microphone so you can describe your campaign by voice.",
+          "microphonePermission": "Campaigns uses the microphone so you can talk to Sam, the voice assistant, and describe your campaign by voice.",
           "enableBackgroundPlayback": false
         }
       ],

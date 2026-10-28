@@ -2,7 +2,6 @@
 // The result is stored like an upload; generated images carry a small "AI" badge wherever they're edited.
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useMutation } from "@tanstack/react-query";
-import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
@@ -12,6 +11,7 @@ import { platformApi } from "@/api/platform";
 import type { Upload } from "@/api/types";
 import { Button, IconButton, Text, TextField } from "@/components/ui";
 import { colors, fonts, radius, spacing, themed } from "@/theme";
+import { PreviewImage } from "./preview-image";
 
 /** Generated images live in their own Cloudinary folder, so the URL tells them apart. */
 export const isAiImage = (url: string | null | undefined) => !!url && url.includes("/generated/");
@@ -63,7 +63,7 @@ export function GenerateImageSheet({
             <Shimmer aspect={aspect} />
           ) : generate.data ? (
             <View style={[styles.frame, { aspectRatio: aspect }]}>
-              <Image source={{ uri: generate.data.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+              <PreviewImage url={generate.data.url} transition={250} />
               <AiBadge />
             </View>
           ) : (
@@ -96,7 +96,7 @@ export function GenerateImageSheet({
           ) : (
             <Button
               label={generate.isPending ? "Creating…" : "Generate"}
-              icon="sparkles"
+              icon="bulb"
               block
               loading={generate.isPending}
               disabled={prompt.trim().length < 10}
@@ -109,7 +109,7 @@ export function GenerateImageSheet({
   );
 }
 
-/** Soft violet placeholder with a light sweep and pulsing sparkles while the image is made. */
+/** Soft violet placeholder with a light sweep and a pulsing palette while the image is made. */
 function Shimmer({ aspect }: { aspect: number }) {
   const sweep = useSharedValue(0);
   const pulse = useSharedValue(0);
@@ -124,7 +124,7 @@ function Shimmer({ aspect }: { aspect: number }) {
       <View style={[styles.frame, styles.placeholder, { aspectRatio: aspect }]}>
         <Animated.View style={[styles.sweep, sweepStyle]} />
         <Animated.View style={pulseStyle}>
-          <Ionicons name="sparkles" size={40} color={colors.primary} />
+          <Ionicons name="color-palette" size={40} color={colors.primary} />
         </Animated.View>
       </View>
       <Text variant="bodySm" align="center">
@@ -138,7 +138,7 @@ function Shimmer({ aspect }: { aspect: number }) {
 export function AiBadge({ style }: { style?: object }) {
   return (
     <View style={[styles.badge, style]} accessibilityLabel="AI-generated image">
-      <Ionicons name="sparkles" size={11} color="#FFFFFF" />
+      <Ionicons name="bulb" size={11} color="#FFFFFF" />
       <Text style={styles.badgeText}>AI</Text>
     </View>
   );

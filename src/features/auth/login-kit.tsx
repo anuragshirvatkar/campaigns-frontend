@@ -158,6 +158,58 @@ export function GoogleButton({ u, onPress, loading }: { u: Scale; onPress: () =>
   );
 }
 
+export type SignInRole = "user" | "admin";
+
+const ROLES: { role: SignInRole; label: string; icon: IconName; iconOn: IconName }[] = [
+  { role: "user", label: "User", icon: "person-outline", iconOn: "person" },
+  { role: "admin", label: "Admin", icon: "shield-checkmark-outline", iconOn: "shield-checkmark" },
+];
+
+/** Two-way "sign in as" switch: a violet thumb slides under the chosen role. */
+export function RoleSwitch({ u, value, onChange }: { u: Scale; value: SignInRole; onChange: (role: SignInRole) => void }) {
+  const [width, setWidth] = useState(0);
+  const pos = useSharedValue(value === "admin" ? 1 : 0);
+  const pad = u(7);
+  const half = Math.max(0, (width - pad * 2) / 2);
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: pos.value * half }] }));
+
+  const pick = (role: SignInRole) => {
+    if (role === value) return;
+    Haptics.selectionAsync().catch(() => {});
+    pos.set(withSpring(role === "admin" ? 1 : 0, { damping: 20, stiffness: 260, mass: 0.7 }));
+    onChange(role);
+  };
+
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel="Sign in as"
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={[styles.switch, { height: Math.max(u(80), 48), borderRadius: u(20), padding: pad }]}
+    >
+      {width > 0 && <Animated.View style={[styles.thumb, { width: half, top: pad, bottom: pad, left: pad, borderRadius: u(15) }, thumb]} />}
+      {ROLES.map((r) => {
+        const on = r.role === value;
+        return (
+          <Pressable
+            key={r.role}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={`Sign in as ${r.label}`}
+            onPress={() => pick(r.role)}
+            style={[styles.center, styles.row, { flex: 1, gap: u(12) }]}
+          >
+            <Ionicons name={on ? r.iconOn : r.icon} size={Math.max(u(30), 18)} color={on ? "#FFFFFF" : LOGIN.icon} />
+            <Text maxFontSizeMultiplier={1} style={[styles.switchLabel, { fontSize: Math.max(u(25), 15), color: on ? "#FFFFFF" : LOGIN.body }]}>
+              {r.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function GoogleLogo({ size }: { size: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48">
@@ -191,6 +243,17 @@ const styles = themed(() => StyleSheet.create({
   primaryLabel: { fontFamily: fonts.medium, color: "#FFFFFF", includeFontPadding: false },
   arrow: { position: "absolute" },
   googleLabel: { fontFamily: fonts.medium, color: LOGIN.google, includeFontPadding: false },
+  switch: { flexDirection: "row", backgroundColor: LOGIN.heroBg, borderWidth: 1, borderColor: LOGIN.border },
+  thumb: {
+    position: "absolute",
+    backgroundColor: LOGIN.accent,
+    shadowColor: LOGIN.accent,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  switchLabel: { fontFamily: fonts.medium, includeFontPadding: false },
 }));
 
 /** AuthInput for passwords, with the show/hide eye button */

@@ -5,8 +5,16 @@ export type User = {
   email: string;
   fullName: string;
   avatarUrl: string | null;
+  /** "admin" = the platform admin, who reviews campaigns */
+  role: UserRole;
+  /** Sam's first-run tour is done (never shown again, even after logging back in) */
+  appIntroduced: boolean;
+  /** Sam, the voice assistant, is switched on */
+  assistantEnabled: boolean;
   createdAt: string;
 };
+
+export type UserRole = "user" | "admin";
 
 export type Me = User & { counts: { createdCount: number; backedCount: number; followingCount: number } };
 
@@ -389,4 +397,95 @@ export type AiDraft = {
   adDescription: string;
   ctaText: string;
   followUpQuestions: string[];
+};
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export type AdminTab = "pending" | "changes_requested" | "approved" | "rejected";
+
+export type AdminCreator = { id: string; fullName: string; email: string; avatarUrl: string | null; createdAt: string };
+
+/** The automated pre-screen of the latest submission: a suggestion for the admin, never shown to the creator. */
+export type AiSuggestion = CampaignReview;
+
+export type AdminCampaignCard = CampaignCard & {
+  creator: AdminCreator;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  isResubmission: boolean;
+  aiSuggestion: AiSuggestion | null;
+};
+
+export type AdminCampaignList = { items: AdminCampaignCard[]; counts: Record<AdminTab, number> };
+
+export type AdminCampaign = CampaignDetail & {
+  creator: AdminCreator & { campaignCount: number };
+  reviewedAt: string | null;
+  isResubmission: boolean;
+  /** False once the campaign has been live: it can only be sent back for changes */
+  canReject: boolean;
+  counts: { followers: number; comments: number };
+  aiSuggestion: AiSuggestion | null;
+  reviews: CampaignReview[];
+};
+
+export type ReviewDecision = CampaignReview["decision"];
+export type ReviewInput = { decision: ReviewDecision; note?: string; issues?: { step: number; message: string }[] };
+
+/** Days back, or all time */
+export type AnalyticsRange = "7" | "30" | "90" | "all";
+
+export type AdminAnalytics = {
+  /** null = all time */
+  days: number | null;
+  /** First day of the period (YYYY-MM-DD) */
+  since: string;
+  /** Chart points are days, or weeks for long periods */
+  bucket: "day" | "week";
+  kpis: {
+    raisedCents: number;
+    prevRaisedCents: number | null;
+    contributions: number;
+    prevContributions: number | null;
+    backers: number;
+    avgContributionCents: number;
+    platformFeeCents: number;
+    newUsers: number;
+    prevNewUsers: number | null;
+  };
+  allTime: { raisedCents: number; users: number; campaigns: number; live: number; promoting: number; completed: number; drafts: number };
+  review: {
+    pending: number;
+    changesRequested: number;
+    rejected: number;
+    decisions: { approved: number; changesRequested: number; rejected: number };
+    approvalRatePct: number | null;
+    avgReviewHours: number | null;
+    /** How often the admin's decision matched the AI suggestion (missing from older servers) */
+    aiAgreement?: { decisions: number; agreedPct: number | null };
+  };
+  statuses: { status: CampaignStatus; count: number }[];
+  daily: { date: string; raisedCents: number; contributions: number; signups: number; submissions: number }[];
+  categories: { category: Category; campaigns: number; raised: number }[];
+  payments: { succeeded: number; failed: number; cancelled: number; pending: number; successRatePct: number | null };
+  delivery: {
+    spend: number;
+    impressions: number;
+    clicks: number;
+    reach: number;
+    ctrPct: number;
+    channels: { channel: Channel; spend: number; impressions: number; clicks: number; reach: number }[];
+  };
+  funnel: { key: string; label: string; count: number }[];
+  engagement: { follows: number; comments: number; feedback: { yes: number; somewhat: number; no: number } };
+  topCampaigns: {
+    id: string;
+    title: string | null;
+    status: CampaignStatus;
+    category: Category | null;
+    imageUrl: string | null;
+    raisedCents: number;
+    goalCents: number | null;
+    backers: number;
+  }[];
 };

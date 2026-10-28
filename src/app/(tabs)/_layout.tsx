@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useUnreadCount } from "@/api/queries";
-import { TabBar } from "@/components/ui/tab-bar";
+import { BlurScreen, TabBar } from "@/components/ui/tab-bar";
 
 export default function TabsLayout() {
   const unread = useUnreadCount();
@@ -17,6 +17,8 @@ export default function TabsLayout() {
         animation: "fade",
       }}
       tabBar={(props) => <TabBar {...props} />}
+      // Each screen is a blur target, so the glass tab bar can blur what's behind it
+      screenLayout={({ children, route }) => <BlurScreen routeKey={route.key}>{children}</BlurScreen>}
     >
       <Tabs.Screen name="index" options={{ title: "Home" }} />
       <Tabs.Screen name="explore" options={{ title: "Explore" }} />

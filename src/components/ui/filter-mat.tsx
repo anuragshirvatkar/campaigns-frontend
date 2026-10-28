@@ -212,7 +212,8 @@ const styles = themed(() => StyleSheet.create({
     borderWidth: 1,
   },
   pillOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillOff: { backgroundColor: colors.surface, borderColor: colors.border },
+  // A touch more visible than the hairline border, still quiet
+  pillOff: { backgroundColor: colors.surface, borderColor: dk("#DEDCF0", "#34355A") },
   count: {
     minWidth: 20,
     height: 20,

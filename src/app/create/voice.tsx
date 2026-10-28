@@ -4,18 +4,15 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from "expo-audio";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
-import { campaignsApi } from "@/api/campaigns";
 import { ApiError } from "@/api/client";
 import { platformApi } from "@/api/platform";
 import { useConfig } from "@/api/queries";
 import { Button, Note, Screen, Skeleton, Text, TextField, useToast } from "@/components/ui";
-import { aiDraftToForm } from "@/features/create/ai-assist";
-import { aiNotes } from "@/features/create/ai-notes";
-import { formFromCampaign } from "@/features/create/use-draft";
+import { draftFromText } from "@/features/create/draft-from-text";
 import { colors, fonts, shadow, spacing, themed } from "@/theme";
 
 // Speech needs far less than music: mono at 64 kbps keeps uploads small on mobile data
@@ -96,37 +93,33 @@ export default function VoiceScreen() {
 
   // Create the draft, let AI fill it, and land on the editable first step
   const build = useMutation({
-    mutationFn: async () => {
-      const campaign = await campaignsApi.create("voice");
-      const { mode, draft } = await platformApi.draft(transcript.trim());
-      const v = aiDraftToForm(draft, formFromCampaign(campaign));
-      const text = (s: string | undefined) => (s?.trim() ? s : null);
-      const updated = await campaignsApi.update(campaign.id, {
-        title: text(v.title),
-        category: v.category ?? null,
-        creatorType: v.creatorType ?? null,
-        creatorDescription: text(v.creatorDescription),
-        summary: text(v.summary),
-        targetAudience: text(v.targetAudience),
-        whyItMatters: text(v.whyItMatters),
-        storyHeadline: text(v.storyHeadline),
-        storyIntro: text(v.storyIntro),
-        storyBlocks: v.storyBlocks ?? [],
-        adHeadline: text(v.adHeadline),
-        adDescription: text(v.adDescription),
-        ctaText: text(v.ctaText),
-      });
-      const notes = [...draft.followUpQuestions];
-      if (mode === "demo") notes.unshift("AI was unavailable, so this is a demo draft. Replace it with your own details.");
-      aiNotes.set(updated.id, notes);
-      return updated;
-    },
+    mutationFn: (text: string) => draftFromText(text),
     onSuccess: (c) => {
       void qc.invalidateQueries({ queryKey: ["my-campaigns"] });
       router.replace({ pathname: "/create/[id]", params: { id: c.id } });
     },
     onError: (err) => toast(err instanceof ApiError ? err.message : "Couldn't create the draft. Try again.", "error"),
   });
+
+  // Sam can bring an idea here ("create a campaign about ..."): it appears in the box below and
+  // "Create my draft" is pressed for the user, in view, after a moment to read it
+  const asked = useLocalSearchParams<{ idea?: string; at?: string }>();
+  const askKey = `${asked.at ?? ""}|${asked.idea ?? ""}`;
+  const [lastAsked, setLastAsked] = useState("|");
+  const [autoBuild, setAutoBuild] = useState<string | null>(null);
+  if (askKey !== lastAsked) {
+    setLastAsked(askKey);
+    if (asked.idea) {
+      setTranscript(asked.idea);
+      setAutoBuild(asked.idea);
+    }
+  }
+  const { mutate: buildDraft } = build;
+  useEffect(() => {
+    if (!autoBuild) return;
+    const t = setTimeout(() => buildDraft(autoBuild), 1600);
+    return () => clearTimeout(t);
+  }, [autoBuild, buildDraft]);
 
   const prompts = config.data?.voicePrompts ?? [];
 
@@ -138,9 +131,6 @@ export default function VoiceScreen() {
     >
       <Screen>
         <Text variant="h2">Tell us your idea</Text>
-        <Text variant="bodySm" style={{ marginTop: 4 }}>
-          {"Talk through these, in your own words. You'll edit everything after."}
-        </Text>
 
         <View style={styles.prompts}>
           {config.isPending &&
@@ -202,16 +192,13 @@ export default function VoiceScreen() {
 
         <Button
           label={build.isPending ? "Writing your draft…" : "Create my draft"}
-          icon="sparkles"
+          icon="bulb"
           block
           loading={build.isPending}
           disabled={transcript.trim().length < 20 || recording}
-          onPress={() => build.mutate()}
+          onPress={() => build.mutate(transcript)}
           style={{ marginTop: spacing.lg }}
         />
-        <Text variant="caption" align="center" style={{ marginTop: spacing.sm }}>
-          AI never adds sources or sets your funding goal.
-        </Text>
       </Screen>
     </KeyboardAvoidingView>
   );

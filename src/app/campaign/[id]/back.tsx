@@ -303,10 +303,6 @@ function Checkout({ c, config }: { c: PublicCampaign; config: PlatformConfig }) 
           <View style={styles.stepBody}>
             <View style={{ gap: spacing.xs }}>
               <Text variant="h2">Pay {money(contribution.breakdown.totalChargedCents)}</Text>
-              <View style={styles.simulated}>
-                <Ionicons name="flask-outline" size={14} color={colors.textMuted} />
-                <Text variant="caption">Simulated checkout · no real money is charged</Text>
-              </View>
             </View>
             <TextField
               ref={cardInput}
@@ -352,7 +348,6 @@ function Checkout({ c, config }: { c: PublicCampaign; config: PlatformConfig }) 
                 {confirm.error instanceof ApiError ? confirm.error.message : "Couldn't reach the payment provider. You were not charged."}
               </ErrorLine>
             )}
-            <Text variant="caption">Pending payment {contribution.receiptNumber}. Nothing is charged until you confirm.</Text>
           </View>
         )}
 
@@ -598,7 +593,6 @@ const styles = themed(() =>
     },
     hairline: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     toggle: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-    simulated: { flexDirection: "row", alignItems: "center", gap: 6 },
     errorLine: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
     bar: {
       position: "absolute",
